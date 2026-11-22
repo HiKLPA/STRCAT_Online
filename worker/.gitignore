@@ -1,0 +1,4 @@
+# Worker 依赖与本地密钥
+node_modules/
+.dev.vars
+.wrangler/

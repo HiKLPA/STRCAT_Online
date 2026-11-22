@@ -1,0 +1,244 @@
+/* ===== 第三面板 · 定制（.panel-join / .panel-circles）：双语标题与正文、定制触发按钮、可拖拽元素 =====
+   样式自 index.html 内联 <style> 拆出（原分散三处，此处合为一份，选择器无交集） */
+
+  /* 第三「定制」面板：双语标题（顶部区）。左 STRCAT(Barlow 128px) + 右两行中文(60px)，两侧等高 */
+  .panel-join {
+    position: absolute;
+    top: 64px;
+    left: 64px;
+    z-index: 1;              /* 内容层，低于右上按钮 z10 */
+    pointer-events: none;    /* 不挡定制按钮/3D 交互 */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .panel-join__main {
+    display: flex;
+    align-items: center;     /* 右中文块相对 STRCAT 垂直居中 → 等高感 */
+    gap: 32px;
+  }
+  .panel-join__word {
+    font-family: var(--text-barlow);
+    font-size: 128px;
+    font-weight: 600;
+    color: var(--white);
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .panel-join__cn {
+    display: flex;
+    flex-direction: column;
+  }
+  .panel-join__cn-line {
+    font-family: var(--text-sans);        /* 思源黑体 */
+    font-size: var(--text-large);
+    font-weight: 600;
+    color: var(--white);
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .panel-join__cn-line + .panel-join__cn-line {
+    margin-top: 4px;
+  }
+  .panel-join__en {
+    font-family: var(--text-barlow);
+    font-size: var(--text-normal);
+    font-weight: 500;
+    color: var(--grey);
+    white-space: nowrap;
+  }
+  /* 定制面板正文 */
+  .panel-join__body {
+    margin-top: 32px;
+    width: 680px;
+  }
+  .panel-join__body p {
+    text-align: justify;
+  }
+  .panel-join__zh {
+    font-family: var(--text-sans);
+    font-size: var(--text-smallest);
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--white);
+  }
+  .panel-join__en-p {
+    font-family: var(--text-barlow);
+    font-size: var(--text-tiny);
+    font-weight: 400;
+    line-height: 1.2;
+    margin-top: 4px;
+    color: var(--grey);
+  }
+  .panel-join__zh:not(:first-child) {
+    margin-top: 32px;
+  }
+
+  /* 定制触发按钮（恒显示；仅主面板可交互，侧位 / 移动中不响应）—— 单行中文 */
+  .customize-trigger {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 160px;
+    height: 40px;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 8px;
+    border-radius: 999px;
+    background: transparent;
+    border: none;
+    color: var(--white);
+    cursor: pointer;
+    line-height: 1;
+  }
+  /* 底盘：常驻 1px 内描边（胶囊形），hover 叠底色与光晕 —— 全在 ::before 上随 --btn-pop 缩放，本体零 transform */
+  .customize-trigger::before {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+  }
+  .customize-trigger__cn {
+    font-family: var(--text-sans);        /* 思源黑体 */
+    font-size: var(--text-small);         /* 20px */
+    font-weight: 500;
+    position: relative;                   /* 文字压在底盘之上，不被半透明底色压暗 */
+    z-index: 1;
+  }
+  /* 交互放行仅限主面板：侧位面板按钮可见但不可 hover/点击 */
+  .carousel-panel.is-active .customize-trigger { pointer-events: auto; }
+  /* 在 .panel-join 内（正文下 32px、左对齐）时改为正常流定位。取 relative 而非 static ——
+     表现一致，且给 ::before 底盘一个定位上下文（static 会让底盘跑到面板左上角） */
+  .carousel-panel .panel-join .customize-trigger {
+    position: relative;
+    left: auto;
+    top: auto;
+    transform: none;
+    margin-top: 32px;
+    align-self: flex-start;
+  }
+  /* hover：全站统一的 .25 玻璃底（毛玻璃参数与歌单菜单同款） */
+  .customize-trigger:hover::before {
+    background: rgba(45, 45, 45, 0.25);
+    backdrop-filter: blur(32px) saturate(160%) brightness(1.15) contrast(1.05);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(1.15) contrast(1.05);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6),
+                0 0 16px rgba(45, 45, 45, 0.25);
+  }
+
+  /* ===== 可拖拽元素（圆 / 勒洛三角形） ===== */
+  .panel-circles {
+    position: absolute;
+    inset: 0;
+    z-index: 2;               /* 内容(panel-join z1)之上、右上按钮(z10)之下 */
+    pointer-events: none;     /* 仅主面板放行（见 .is-active 规则） */
+    overflow: hidden;         /* 拖拽超出面板时裁切 */
+  }
+  /* 所有拖拽子项：透明命中（继承 none），仅主面板放行 */
+  .panel-circles > * {
+    position: absolute;
+    pointer-events: none;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+    /* 只提示 transform —— left / top 不是可合成属性，写进 will-change 不生效 */
+    will-change: transform;
+  }
+  .carousel-panel.is-active .panel-circles > * { pointer-events: auto; }
+  /* 红色中空圆环：命中区只取真实填充的环带（容器与 svg 均不命中，只有 evenodd 路径的实体部分命中；事件仍冒泡回容器，故拖拽与 hover 逻辑照常） */
+  .carousel-panel.is-active .panel-circles > .panel-circle--red { pointer-events: none; }
+  .panel-circle--red svg { pointer-events: none; }
+  .panel-circle--red path { pointer-events: auto; }
+
+  /* —— 正圆：纯色无描边，外投影随 hover/拖拽增强（transform 由 JS elastic 驱动）—— */
+  .panel-circle {
+    border-radius: 50%;
+    box-shadow: 0 0 32px rgba(45, 45, 45, 0.5);
+    transition: box-shadow 0.4s ease;
+  }
+  .carousel-panel.is-active .panel-circle:hover {
+    box-shadow: 0 0 48px rgba(45, 45, 45, 0.5), drop-shadow(0 0 16px rgba(255, 255, 255, 0.05));
+  }
+
+  /* —— 勒洛三角形 —— */
+  .panel-shape svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    filter: drop-shadow(0 0 32px rgba(45, 45, 45, 0.5));
+    transition: filter 0.4s ease;
+  }
+  .panel-shape--white svg path { fill: var(--yellow); }
+  .panel-shape--black svg path { fill: var(--blue); }
+  .carousel-panel.is-active .panel-shape:hover svg {
+    filter: drop-shadow(0 0 48px rgba(45, 45, 45, 0.5)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.05));
+  }
+
+  /* —— 拖拽中（任意类型）：抬层 + 光标；阴影按类型在各自过渡属性上增强 —— */
+  .panel-circles .is-dragging {
+    z-index: 20;
+    cursor: grabbing;
+  }
+  .panel-circle.is-dragging {
+    box-shadow: 0 0 48px rgba(45, 45, 45, 0.5), 0 0 16px rgba(255, 255, 255, 0.05);
+  }
+  .panel-shape.is-dragging svg {
+    filter: drop-shadow(0 0 48px rgba(45, 45, 45, 0.5)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.05));
+  }
+  /* —— 尺寸与初始摆放 —— */
+  .panel-circle--red {
+    width: 1024px;
+    height: 1024px;
+    left: 50%;
+    top: 10%;
+    /* 红色中空平面圆环：SVG 双同心圆 evenodd 挖孔，纯 fill 无描边；阴影走 filter 全轮廓 */
+    background: none;
+    box-shadow: none;
+    filter: drop-shadow(0 0 48px rgba(45, 45, 45, 0.5));
+    transition: filter 0.4s ease;
+  }
+  .panel-circle--red svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .panel-circle--red path { fill: var(--red); }
+  /* hover 阴影：容器已 pointer-events:none，用 :has(path:hover) 确保只在实际环带上触发 */
+  .carousel-panel.is-active .panel-circle--red:hover,
+  .carousel-panel.is-active .panel-circle--red:has(path:hover) {
+    box-shadow: none;
+    filter: drop-shadow(0 0 48px rgba(45, 45, 45, 0.5)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.05));
+  }
+  .panel-circle--red.is-dragging {
+    box-shadow: none;
+    filter: drop-shadow(0 0 64px rgba(45, 45, 45, 0.5)) drop-shadow(0 0 32px rgba(255, 255, 255, 0.05));
+  }
+  .panel-circle--blue {
+    width: 384px;
+    height: 384px;
+    background: var(--blue);
+    left: -15%;
+    top: 80%;
+  }
+  .panel-circle--yellow {
+    width: 192px;
+    height: 192px;
+    background: var(--yellow);
+    left: 90%;
+    top: 25%;
+  }
+  .panel-shape--white {
+    width: 96px;
+    height: 96px;
+    left: 15%;
+    top: 85%;
+    --rot: 60deg;
+    transform: rotate(var(--rot));
+  }
+  .panel-shape--black {
+    width: 64px;
+    height: 64px;
+    left: 95%;
+    top: 15%;
+    --rot: 5deg;
+    transform: rotate(var(--rot));
+  }

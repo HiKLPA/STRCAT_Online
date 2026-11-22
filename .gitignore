@@ -1,0 +1,13 @@
+# 本地私有配置（含 API Key，不要提交）
+js/ai-config.js
+
+# 编辑器与工具链
+.vscode/
+.workbuddy/
+node_modules/
+*.log
+
+# 系统杂项
+.DS_Store
+Thumbs.db
+desktop.ini

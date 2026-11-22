@@ -1,0 +1,10 @@
+name = "strcat-ai-proxy"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+# 密钥不进这个文件。用命令行设置，它会存到 Cloudflare 侧：
+#   wrangler secret put ZHIPU_KEY
+#
+# 想换模型（如 glm-4.5-flash）就用 [vars] 覆盖，不用改代码：
+# [vars]
+# MODEL = "glm-4.5-flash"

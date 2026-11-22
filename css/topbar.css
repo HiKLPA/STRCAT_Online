@@ -1,0 +1,133 @@
+/* ===== 顶栏（.topbar / .dots / .menu-group）：三色圆点 + STRCAT 标题 + 右端菜单按钮与滑出选项 =====
+   .menu-btn 的「按压底盘层」统一规则仍在 index.html 里，靠 --btn-pop 与 border-radius: inherit 跨文件衔接 */
+
+  /* 顶栏 */
+  .topbar {
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 80px;
+    padding: 0 48px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  /* 圆点组 */
+  .dots {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  /* 单个圆点 */
+  .dots i {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: block;
+  }
+
+  /* 标题 */
+  .name {
+    font-family: var(--text-barlow);
+    font-size: var(--text-small);
+    font-weight: var(--text-heavy);
+    line-height: 1;
+  }
+
+  /* 顶栏右端菜单按钮 + 滑出选项 */
+  .menu-group {
+    position: relative;
+    margin-left: auto;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    pointer-events: auto;
+  }
+
+  .menu-btn,
+  .menu-item {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    color: var(--grey);
+    transition: color 0.3s ease;
+    pointer-events: auto;
+  }
+  .menu-item {
+    border-radius: 50%;         /* ::before 底盘走 border-radius: inherit；与全站其它按钮同款正圆 */
+  }
+  /* 图标盒：菜单按钮与四个快捷入口共用同一尺寸。尺寸只写在 CSS，HTML 的 <svg> 不带 width/height。
+     图标抬到 ::before 底盘之上的那条在 index.html 公共样式（一）里 */
+  .menu-btn svg,
+  .menu-item svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+  }
+  /* 菜单按钮的圆点：四枚同心的圆叠在正中 → 看成一枚完整圆；菜单呼出后各散到四角并缩成小圆 = 「一分为四」。
+     transform-box / origin 必须显式写死：缩放要绕 viewBox 中心（正好是圆心）发生，否则圆心会跟着跑。 */
+  .menu-btn svg circle {
+    fill: currentColor;
+    transform-box: view-box;
+    transform-origin: 50% 50%;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .menu-btn.active svg circle:nth-child(1) { transform: translate(-5px, -5px) scale(0.5); }
+  .menu-btn.active svg circle:nth-child(2) { transform: translate(5px, -5px) scale(0.5); }
+  .menu-btn.active svg circle:nth-child(3) { transform: translate(-5px, 5px) scale(0.5); }
+  .menu-btn.active svg circle:nth-child(4) { transform: translate(5px, 5px) scale(0.5); }
+  /* 四枚依次错开一点点出发：散开有先后，收起时同样错开（对称） */
+  .menu-btn svg circle:nth-child(2) { transition-delay: 0.05s; }
+  .menu-btn svg circle:nth-child(3) { transition-delay: 0.10s; }
+  .menu-btn svg circle:nth-child(4) { transition-delay: 0.15s; }
+  .menu-btn:hover,
+  .menu-btn.active,
+  .menu-item:hover {
+    color: var(--white);
+  }
+  /* 补一块与 .lock-player__btn 同款的底盘，让按压缩放有可见承载（仅在 hover / .active 时出现） */
+  .menu-btn { border-radius: 50%; }
+  /* hover 与「菜单已展开」（.active）共用同一套底盘：全站统一的 .25 玻璃底 */
+  .menu-btn:hover::before,
+  .menu-btn.active::before,
+  .menu-item:hover::before {
+    background: rgba(45, 45, 45, 0.25);
+    backdrop-filter: blur(32px) saturate(160%) brightness(1.15) contrast(1.05);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(1.15) contrast(1.05);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25),
+                0 0 16px rgba(45, 45, 45, 0.25);
+  }
+
+  .menu-items {
+    position: absolute;
+    right: 48px;
+    top: 50%;
+    margin-top: -16px;
+    display: flex;
+    gap: 16px;
+  }
+
+  /* 快捷入口的面板名标签：hover 时在按钮下方浮出（文字取 HTML 的 data-label）。
+     用 ::after（::before 被底盘层占用）。⚠ .menu-item 不能加 overflow: hidden，否则标签被裁掉 */
+  .menu-item::after {
+    content: attr(data-label);
+    position: absolute;
+    top: calc(100% + 8px);          /* 与按钮下沿的距离 */
+    left: 50%;
+    transform: translateX(-50%);    /* 以按钮中线居中 */
+    font-family: var(--text-sans);  /* button 不继承 body 字体，必须显式写 */
+    font-size: var(--text-tiniest);
+    font-weight: var(--text-thin);
+    line-height: 1;
+    color: var(--white);
+    white-space: nowrap;            /* 名字短，不换行；换行会顶出顶栏 */
+    opacity: 0;
+    pointer-events: none;           /* 标签不吃指针，否则会和按钮自身的 :hover 抢事件 */
+    transition: opacity 0.2s ease;
+  }
+  .menu-item:hover::after { opacity: 1; }

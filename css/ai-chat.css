@@ -1,0 +1,114 @@
+/* ===== AI 对话胶囊输入框（js/ai-chat.js 专用） =====
+   底色 / 描边 / 毛玻璃参数照抄定制面板与全站 .25 玻璃底那套，保证与既有 UI 同族。
+   位置：底部居中，浮在呼出按钮上方 —— 只改这里的 --ai-bottom / --ai-w 就能挪。
+
+   ⚠ x 方向居中靠 left:50% + margin-left 负半宽，不要改回 translate / scale ——
+     .is-open 那段过渡用的是独立的 translate / scale 属性（为了不跟 GSAP 的 transform 打架），
+     transform 一旦被腾出来做居中，浮出的位移与缩放就没地方写了。 */
+
+.ai-chat {
+  --ai-w: 520px;            /* 胶囊宽度（窄屏由 max-width 兜） */
+  --ai-h: 48px;             /* 胶囊高度 */
+  --ai-bottom: 80px;        /* 距视口底边（呼出按钮之上） */
+  --ai-gap: 16px;           /* 提示文字与输入框的间距 */
+
+  position: fixed;
+  left: 50%;
+  margin-left: calc(min(var(--ai-w), 100vw - 48px) / -2);   /* 负半宽 = 真正居中 */
+  bottom: var(--ai-bottom);
+  z-index: 40;              /* 面板 UI 层之上、开场遮罩(极高)之下 */
+  display: flex;
+  align-items: center;
+  gap: var(--ai-gap);
+  width: min(var(--ai-w), calc(100vw - 48px));
+  height: var(--ai-h);
+  padding: 0 16px;
+  border-radius: 999px;     /* 胶囊 */
+
+  /* 常态：比定制面板略实一点，因为它在暗背景上、底下没有面板托底 */
+  background: rgba(45, 45, 45, 0.35);
+  backdrop-filter: blur(32px) saturate(160%) brightness(1.15) contrast(1.05);
+  -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(1.15) contrast(1.05);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.25),
+    0 0 16px rgba(45, 45, 45, 0.25),
+    0 0 48px rgba(255, 255, 255, 0.05);
+
+  /* 浮出/收起：位移走独立的 translate（与 GSAP 的 transform 互不覆盖），
+     不透明度与缩放走独立的 opacity / scale 属性，GSAP 也没碰这三个。 */
+  translate: 0 12px;
+  opacity: 0;
+  scale: 0.96;
+  visibility: hidden;
+  transition:
+    translate 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    scale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.3s ease,
+    visibility 0s linear 0.3s,
+    box-shadow 0.3s ease;
+}
+.ai-chat.is-open {
+  translate: 0 0;
+  opacity: 1;
+  scale: 1;
+  visibility: visible;
+  transition:
+    translate 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    scale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.3s ease,
+    visibility 0s,
+    box-shadow 0.3s ease;
+}
+
+/* 提示前缀：与顶栏菜单的小字标签同族（Barlow + 疏排 + --grey） */
+.ai-chat__hint {
+  flex: none;
+  font-family: var(--text-barlow);
+  font-size: var(--text-tiniest);
+  font-weight: var(--text-heavy);
+  letter-spacing: 0.05em;
+  color: var(--grey);
+  transition: color 0.3s ease;
+}
+
+.ai-chat__input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: none;
+  outline: none;
+  color: var(--white);
+  font-family: var(--text-sans);
+  font-size: var(--text-smallest);
+  font-weight: var(--text-thin);
+}
+.ai-chat__input::placeholder {
+  color: rgba(240, 240, 230, 0.35);
+}
+
+/* 状态槽：右端一小截，处理中/出错时才有字 */
+.ai-chat__state {
+  flex: none;
+  font-family: var(--text-barlow);
+  font-size: var(--text-tiniest);
+  font-weight: var(--text-heavy);
+  letter-spacing: 0.05em;
+  color: var(--grey);
+  white-space: nowrap;
+}
+.ai-chat.is-error .ai-chat__state { color: var(--red); }
+.ai-chat.is-error { box-shadow: inset 0 0 0 1px rgba(197, 72, 39, 0.6), 0 0 16px rgba(45, 45, 45, 0.25); }
+
+/* 处理中：提示字跳动（三枚点，逐个淡入淡出），给「在想了」的即时反馈 */
+.ai-chat.is-busy .ai-chat__hint { color: var(--white); animation: ai-hint-pulse 1s ease-in-out infinite; }
+@keyframes ai-hint-pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+.ai-chat.is-busy .ai-chat__state { animation: ai-hint-pulse 1s ease-in-out infinite; }
+
+/* 出结果：描边闪一下白，与「结果已落到环上」呼应 */
+.ai-chat.is-done { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7), 0 0 24px rgba(255, 255, 255, 0.12); }
+
+/* 窄屏：贴边、少留白 */
+@media (max-width: 1439px) {
+  .ai-chat { --ai-w: 440px; --ai-bottom: 88px; --ai-h: 48px; padding: 0 6px 0 16px; }
+}

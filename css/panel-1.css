@@ -1,0 +1,94 @@
+/* ===== 第一面板 · 形象 IMAGE（.carousel-panel--first） =====（样式自 index.html 内联 <style> 拆出） */
+
+  /* 第一面板头部区：容纳大标题 + 三色带 + 标签 + 形象设计 */
+  .panel-hero {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 52px;          /* 与 .panel-scroll 顶部内边距 12px 合计 = 原 absolute top 64px */
+    pointer-events: none;
+  }
+  .panel-title {
+    font-family: var(--text-barlow);
+    font-size: 192px;
+    font-weight: var(--text-heavy);
+    line-height: 1;
+    color: var(--white);
+    text-align: center;
+    white-space: nowrap;
+    user-select: none;
+    pointer-events: none;     /* 跟随父 .panel-hero：非中间(侧位)面板不响应 hover；仅 is-active 面板放行 */
+    transform: scaleY(1.12);   /* 字形纵向拉长 */
+    letter-spacing: -0.02em;
+  }
+  /* 仅中间主面板放行字母 hover 命中（字形热区判定在标题容器） */
+  .carousel-panel.is-active .panel-title {
+    pointer-events: auto;
+  }
+  /* 单字母：字形级热区 hover（命中由标题容器 pointermove 判定，字母本体不接事件） */
+  .panel-letter {
+    display: inline-block;
+    line-height: 0.75;         /* 收紧竖直命中区至字形高 */
+    pointer-events: none;      /* 热区判定统一在标题容器 */
+    will-change: transform;
+  }
+  .panel-letter--space { pointer-events: none; }
+  /* 三色带：文字下 32px 起，横贯面板宽，竖向等距堆叠 */
+  .panel-stripes {
+    margin-top: 32px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .panel-stripe {
+    height: 4px;
+    width: 100%;
+  }
+  .panel-stripe--red    { background: var(--red); }
+  .panel-stripe--yellow { background: var(--yellow); }
+  .panel-stripe--blue   { background: var(--blue); }
+
+  /* 大标签组（形象•IMAGE · 色彩•COLOR） */
+  .panel-tags {
+    margin-top: 16px;
+    display: flex;
+    gap: 32px;
+  }
+  .panel-tag {
+    color: var(--white);
+    font-family: var(--text-sans);
+    font-size: var(--text-small);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  /* 「形象设计」大标题：标签组下方、距面板左边 64px（正常流左对齐，参与滚动高度） */
+  .panel-identity {
+    align-self: flex-start;
+    margin: 256px 0 0 96px;
+    color: var(--white);
+    font-family: var(--text-barlow);
+    font-size: var(--text-giant);
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  /* 第一面板：内容纵向可滚（标题/色带/标签/形象设计超面板高时滚轮查看） */
+  .carousel-panel--first {
+    display: block;          /* 取消 grid 居中，内容自上而下参与滚动 */
+    padding: 0;              /* 内边距由 .panel-scroll 接管 */
+  }
+  .panel-scroll {
+    height: 100%;
+    padding: 12px 0 24px;    /* 顶部对齐原面板内边距；底部留滚动余量 */
+    overflow-y: auto;
+    overflow-x: hidden;      /* 大标题横向仍被裁切，仅纵向滚动 */
+    overscroll-behavior: contain;   /* 滚到底不回弹到页面（页面本体锁滚） */
+    scrollbar-width: none;          /* 隐藏滚动条：滚动照旧，只是不画条 */
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .panel-scroll::-webkit-scrollbar { display: none; }

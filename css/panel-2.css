@@ -1,0 +1,10 @@
+/* ===== 第二面板 · 衍生（.panel-deriv）：居中说明段落 =====（样式自 index.html 内联 <style> 拆出） */
+
+  /* 第二「衍生」面板：居中说明段落。正文样式复用 .panel-join__zh / .panel-join__en-p，
+     此处仅覆盖盒宽与对齐；不给 p 设 color，否则会盖掉英文段落的 --grey */
+  .panel-deriv {
+    width: 448px;
+    max-width: 100%;
+    text-align: center;
+    pointer-events: none;
+  }

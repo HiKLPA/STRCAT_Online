@@ -1,0 +1,114 @@
+# STRCAT Online
+
+An interactive platform for real-time conversations with STRCAT, a lively and customizable mascot inspired by the `strcat()` function of C.
+
+一个跑在浏览器里的吉祥物站点：Three.js 渲染的三渲二小猫站在页面中央，绕它一圈是字符环；点击本体即可与它对话，回答会写在那圈字符上。四个毛玻璃面板承载形象介绍、衍生文创、定制入口与播放器，全部塞在同一个视口里，没有滚动条。
+
+在线预览：<https://hiklpa.github.io/STRCAT_Online/>（启用 GitHub Pages 后生效，见文末）
+
+---
+
+## 运行
+
+页面用了 ES module、`fetch` 与 GLB 模型，`file://` 直接双击打不开，必须起一个本地服务：
+
+```bash
+# 任选其一，在本目录下执行
+python -m http.server 8000
+npx serve .
+```
+
+然后访问 <http://localhost:8000>。
+
+首次进入会先播一段开场视频，点页面任意处跳过。建议 1440×900 以上窗口，最小适配宽度 1180px。
+
+---
+
+## 功能
+
+| 入口 | 内容 |
+|---|---|
+| 3D 本体 | 拖拽旋转、滚轮缩放；点击呼出对话输入框，Esc 或点空白收起 |
+| AI 对话 | 智谱 GLM-4-Flash，支持天气与时间两个工具调用，答案写进外围字符环（自动分段 + 自动字号） |
+| 顶栏菜单 | 四枚入口：形象、衍生、定制、锁屏，面板以 squash & stretch 浮出 |
+| 面板一 形象 | 标题字块 + 三色条纹，介绍吉祥物的造型与配色 |
+| 面板二 衍生 | 票根、条幅、明信片、鼠标样式等文创说明 |
+| 面板三 定制 | 跳转定制浮层：形态、配色、表情、字符内容、头饰（方凳 / 键盘） |
+| 面板四 锁屏 | 唱片播放器：本地歌单导入、点选、拖拽排序、可拖动进度条，曲名与进度同步到顶栏迷你播放器 |
+| 常驻迷你播放器 | 顶栏居中，内圈白描边走进度，随顶栏一起在放大态退出 |
+
+定制面板改的是同一个 3D 对象：颜色走 `--red` / `--yellow` / `--blue`，头饰换的是 `models/` 下的 GLB。刷新即回到默认形象，不留存档。
+
+---
+
+## 目录
+
+```
+index.html          # HTML + 三段内联 CSS（公共样式）+ 内联 module JS（3D 场景、动画、播放器）
+css/
+  topbar.css        # 顶栏、菜单、迷你播放器
+  panel-1.css       # 形象面板
+  panel-2.css       # 衍生面板
+  panel-3.css       # 定制面板 + 触发按钮 + 拖拽
+  panel-4.css       # 锁屏播放器
+  ai-chat.css       # 对话输入框
+js/
+  ai-chat.js        # AI 对话：输入框 DOM、两轮 function calling、字符环分段
+  ai-config.js      # 本地密钥（不进 git）
+  ai-config.example.js  # 上面那份的模板
+lib/                # three.js r160 / OrbitControls / GLTFLoader、gsap 3.12.5、CustomEase、ScrollTrigger
+models/             # 头饰模型（Blender 导出）：stool.glb、keyboard.glb
+icon/               # favicon、唱片卡面
+opening/            # 开场视频
+worker/             # 可选：Cloudflare Worker 代理，把 API Key 挪到服务端
+```
+
+Three.js 走 importmap 指向 `lib/`，不依赖 CDN；只有 Google Fonts 是外链。
+
+---
+
+## AI 接口配置
+
+密钥不在仓库里。复制模板后填入自己的 key：
+
+```bash
+cp js/ai-config.example.js js/ai-config.js
+```
+
+`js/ai-config.js` 已被 `.gitignore` 排除。两种接法：
+
+**本地自用（直连）** — key 会出现在前端，只适合自己看。填 `apiKey` 即可，`endpoint` 保持智谱官方地址。
+
+**公网发布（走代理）** — 把 `endpoint` 换成 `worker/` 部署出来的地址（结尾补 `/chat`），`apiKey` 留空。密钥只存在 Cloudflare 侧，浏览器拿不到。部署步骤见 [`worker/README.md`](worker/README.md)。
+
+没有配置时，点击本体只会提示还没配好接口，页面其余部分不受影响。
+
+---
+
+## 技术栈
+
+- Three.js r160：GLTFLoader 载入吉祥物与头饰，OrbitControls 做轨道视角，字符环用 Canvas 贴图绕在圆环上
+- GSAP 3.12.5 + CustomEase + ScrollTrigger：面板呼出、入场、放大态位移
+- 原生 CSS：CSS 变量做字号与配色 token，`cqw` 做自适应间距，无构建步骤
+- 智谱 GLM-4-Flash：OpenAI 兼容格式，可直接换模型或换后端
+
+改动后用浏览器刷新即可，不需要编译。3D 素材在 `models/`，替换同名 GLB 文件就生效。
+
+---
+
+## 已知限制
+
+- 音乐播放器不内置音频，歌单由用户自己导入本地文件（浏览器限制，刷新后需重新导入）
+- 定制结果不持久化，刷新恢复默认
+- 需要支持 WebGL2 的现代浏览器
+
+---
+
+## 版权
+
+站点内容、吉祥物形象与衍生设计归作者所有，代码仅供学习参考，未经许可请勿商用或二次发布形象素材。
+
+## 启用 GitHub Pages（可选）
+
+仓库 Settings → Pages → Source 选 `Deploy from a branch`，分支 `main` / 目录 `/ (root)`，保存后访问
+`https://hiklpa.github.io/STRCAT_Online/`。若走 Pages，AI 必须用 `worker/` 代理，否则没有后端可用。

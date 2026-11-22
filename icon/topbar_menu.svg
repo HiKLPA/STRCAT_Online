@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_图层_1" data-name="图层 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 595.28 841.89">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #2c2d2b;
+      }
+    </style>
+  </defs>
+  <rect class="cls-1" x="298.93" y="409.92" width="2" height="12" rx="1" ry="1" transform="translate(715.85 115.99) rotate(90)"/>
+  <rect class="cls-1" x="294.93" y="419.92" width="2" height="12" rx="1" ry="1" transform="translate(721.85 129.99) rotate(90)"/>
+  <rect class="cls-1" x="296.93" y="412.92" width="2" height="16" rx="1" ry="1" transform="translate(718.85 122.99) rotate(90)"/>
+  <rect class="cls-1" x="289.88" y="414.92" width="2.1" height="2.1" rx="1.05" ry="1.05" transform="translate(706.9 125.04) rotate(90)"/>
+  <rect class="cls-1" x="303.88" y="424.82" width="2.1" height="2.1" rx="1.05" ry="1.05" transform="translate(730.8 120.94) rotate(90)"/>
+</svg>

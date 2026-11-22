@@ -1,0 +1,672 @@
+/* ===== 第四面板 · 锁屏播放器 ===== */
+
+  /* ================= 区域一 · 台面组（唱片 + 卡面 + 曲名） =================
+     变量只服务本区，与区域二 .lock-player 零互引；整组可升降 / 缩放 / 吸附倾斜。
+     ⚠ 别加 z-index —— 会盖住 .lock-player 的歌单菜单与播放条。 */
+  .lock-stage {
+    --stage-lift: 0px;         /* 整组升降（负值上移） */
+    --stage-scale: 1;          /* 整组等比缩放，支点 = 面板中心 */
+    --disc-rise: 21px;         /* 唱片圆心相对面板中线的上移量 */
+    --art-rise: 14px;          /* 卡面中心相对面板中线的上移量（与唱片互不牵连） */
+    position: absolute;
+    inset: 0;
+    translate: 0 var(--stage-lift);
+    scale: var(--stage-scale);
+    transform-origin: 50% 50%;   /* 升降 / 缩放 / 吸附倾斜共用的支点 */
+    will-change: transform;      /* 吸附倾斜由指针持续驱动，提前提层 */
+    pointer-events: none;
+  }
+
+  /* ---------- 区域一 · 两侧旋转唱片 ---------- */
+  .lock-discs {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 394.5px;
+    transform: translateY(calc(var(--disc-rise) * -1));   /* 负值上移（--disc-rise 在上方变量块） */
+    pointer-events: none;
+  }
+  /* 唱片：黑胶盘面（沟槽 + 受光）+ 中央三色标签 + 中心孔。左右各一张，同速反向。
+     标签 → ::before；中心孔 → ::after；盘径只动 --disc-size，其余按百分比跟随。
+     ⚠ 沟槽与圆孔旋转对称、看不出转动，可见的转动全来自标签 —— 别把标签改成纯色。 */
+  .lock-disc {
+    --disc-spin: 8s;           /* 转一圈的时长（越小越快） */
+    --disc-size: 192px;        /* 唱片直径 */
+    --label-w:   20%;          /* 中央标签直径（占盘径 %） */
+    --hole-w:    0%;         /* 中心孔直径（占盘径 %） */
+    --groove-step: 6px;        /* 沟槽间距（越小越密） */
+    --groove-ink: rgba(255, 255, 255, 0.05);   /* 沟槽亮度（调深 = 纹路更明显） */
+    --band-red:     20%;   /* 标签内：红带下沿（占标签直径 %） */
+    --band-yellow:  30%;     /* 黄带上沿 */
+    --band-yellow2: 70%;   /* 黄带下沿 */
+    --band-blue:    80%;     /* 蓝带上沿 */
+    position: relative;
+    flex: none;
+    width: var(--disc-size);
+    height: var(--disc-size);
+    border-radius: 50%;
+    background:
+      /* ① 沟槽：一圈套一圈的同心细环（0~1px 是纹路本身，其余是圈距） */
+      repeating-radial-gradient(circle at center,
+        var(--groove-ink) 0 1px,
+        rgba(255, 255, 255, 0) 1px var(--groove-step)),
+      /* ② 盘面受光：中心略亮、外缘沉下去（比背景亮一档，纯黑会糊进页面底色） */
+      radial-gradient(circle at center,
+        rgb(45, 45, 45) 0%, rgb(25, 25, 25) 46%, var(--black) 100%);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);   /* 盘缘一圈极淡的反光 */
+    animation: lock-disc-spin var(--disc-spin) linear infinite;
+    animation-play-state: paused;   /* 默认静止 → 只播放时才 running */
+    will-change: transform;
+  }
+  /* 中央标签：三色横带（带间留缝）。居中走 inset:0 + margin:auto，transform 留给盘体的 rotate 动画 */
+  .lock-disc::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: var(--label-w);
+    height: var(--label-w);
+    border-radius: 50%;
+    background: linear-gradient(to bottom,
+      var(--red) 0%,                    var(--red) var(--band-red),
+      transparent var(--band-red),      transparent var(--band-yellow),
+      var(--yellow) var(--band-yellow), var(--yellow) var(--band-yellow2),
+      transparent var(--band-yellow2),  transparent var(--band-blue),
+      var(--blue) var(--band-blue),     var(--blue) 100%);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.10);   /* 标签与盘面的分界 */
+  }
+  /* 中心孔：露出页面底色，外沿一圈微光把孔读出来 */
+  .lock-disc::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: var(--hole-w);
+    height: var(--hole-w);
+    border-radius: 50%;
+    background: var(--black);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.10);
+  }
+  /* 左侧那张：同一条 keyframes 反向播 → 逆时针（时长同 --disc-spin） */
+  .lock-disc--ccw { animation-direction: reverse; }
+  /* 播放中才自转（.is-playing 由 audio 事件同步）；暂停停在当前角度，恢复接着转 */
+  .carousel-panel.is-playing .lock-disc { animation-play-state: running; }
+  @keyframes lock-disc-spin { to { transform: rotate(360deg); } }
+
+  /* ---------- 区域一 · 中置卡面（icon/disc_type1.png） ---------- */
+  /* <img src> 直引磁盘文件 —— 换图刷新即生效。描边与阴影写在 img 自身，外面不套盒子。 */
+  .lock-art {
+    --art-w: 50%;        /* 卡面宽度（占面板宽 %）；高度由素材宽高比推出，别写 height */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--art-w);
+    height: auto;
+    transform: translate(-50%, calc(-50% - var(--art-rise)));    /* 按自身尺寸回正 + 按 --art-rise 上移 */
+    /* 跟随素材白框的圆角（两段百分比，单值会被宽高比拉成椭圆）；换素材时这三个数一起改 */
+    border-radius: calc(16 / 680 * 100%) / calc(16 / 400 * 100%);
+    /* --art-shadow 卡面落地影（"浮起来"的主要来源）· --art-glow 发光（常态与 .carousel-panel 同值）
+       ⚠ 常态与悬浮态段数必须一致，否则 box-shadow 不插值、会硬切 */
+    --art-shadow: 0 0 32px rgba(45, 45, 45, 0.5), 0 0 12px rgba(45, 45, 45, 0.5);
+    --art-glow:   0 0 16px rgba(45, 45, 45, 0.25), 0 0 32px rgba(255, 255, 255, 0.10);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25), var(--art-shadow), var(--art-glow);
+    transition: box-shadow 0.3s ease;   /* 阴影加深 / 回落要有过程，别硬切 */
+    pointer-events: none;
+  }
+  /* 吸附态：阴影加深 + 发光外扩（.is-hover 由 JS 在进入 / 离开卡面识别区时增删） */
+  .lock-stage.is-hover .lock-art {
+    --art-shadow: 0 0 64px rgba(45, 45, 45, 0.5), 0 0 16px rgba(45, 45, 45, 0.5);
+    --art-glow:   0 0 32px rgba(45, 45, 45, 0.25), 0 0 64px rgba(255, 255, 255, 0.10);
+  }
+
+  /* ================= 区域二 · 底部功能区（播放条 + 歌单菜单 + 传输三键） =================
+     变量只服务本区，与区域一（台面组）零互引；交互只下发给 __bar / __transport / __menu。 */
+  .lock-player {
+    --bar-bottom: 16px;        /* 播放条底边距面板底边（与右上角 .panel-toggle 同节奏） */
+    --bar-h: 32px;             /* 播放条高度 = 条内最高的成员（左端工具组按钮）；改条内按钮尺寸要同步 */
+    --transport-h: 48px;       /* 传输三键直径 = 行高（按钮盒与盒内图标一起动） */
+    --transport-gap: 32px;     /* 传输行底边 ↔ 播放条顶边的间距 */
+    --transport-bottom: calc(var(--bar-bottom) + var(--bar-h) + var(--transport-gap));   /* 传输行底边距面板底边（派生自播放条） */
+    position: absolute;
+    inset: 0;
+    pointer-events: none;      /* 交互只下发给本区的三个后代层 */
+  }
+
+  /* <audio> 无 controls 时不产生盒子；再兜一层确保不参与布局 */
+  .lock-player__audio { display: none; }
+
+  /* 曲名：面板内水平居中，距面板顶边固定（不随传输行浮动），落在右上角 .panel-toggle 之下。
+     在台面组内 → 跟着整组吸附倾斜。
+     字体走 --text-barlow：拉丁命中 Barlow，中文回退思源黑体 */
+  .lock-player__title {
+    /* 就近声明（本元素不在 .lock-player 子树里，取不到那边的变量）：--title-size 曲名字号 / --title-line 行高 */
+    --title-size: var(--text-normal);
+    --title-line: 1;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 96px;                       /* 距面板顶边；只影响曲名 */
+    padding: 0 64px;                 /* 左右等宽留白：长曲名不顶到面板边缘，且中线不偏 */
+    text-align: center;
+    font-family: var(--text-barlow);
+    font-size: var(--title-size);
+    font-weight: var(--text-thin);
+    line-height: var(--title-line);
+    color: var(--white);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;         /* 超长曲名省略号收尾（纯文本才吃得到） */
+    pointer-events: none;
+  }
+
+  /* 功能区按钮统一：32×32 圆形、无底无框，与 .panel-toggle / .bottom-nav__btn 同一语言 */
+  .lock-player__btn {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: var(--white);
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease, opacity 0.3s ease;
+  }
+  .lock-player__btn svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+  }
+  /* hover 与「歌单菜单呼出期间」（.is-active）共用底盘：全站统一的 .25 玻璃底 */
+  .lock-player__btn:hover::before,
+  .lock-player__btn.is-active::before {
+    background: rgba(45, 45, 45, 0.25);
+    backdrop-filter: blur(32px) saturate(160%) brightness(1.15) contrast(1.05);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(1.15) contrast(1.05);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25),
+                0 0 16px rgba(45, 45, 45, 0.25);
+  }
+  /* 无曲目时传输类按钮由 JS 置 disabled：压暗 + 不吃指针 */
+  .lock-player__btn:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
+
+  /* 图标随播放态切换（.is-playing 由 audio 的 play/pause/ended 事件同步） */
+  .lock-player__play .ico-pause { display: none; }
+  .carousel-panel.is-playing .lock-player__play .ico-play { display: none; }
+  .carousel-panel.is-playing .lock-player__play .ico-pause { display: block; }
+
+  /* 图标随播放模式切换（.is-shuffle 由模式按钮同步） */
+  .lock-player__mode .ico-shuffle { display: none; }
+  .carousel-panel.is-shuffle .lock-player__mode .ico-repeat { display: none; }
+  .carousel-panel.is-shuffle .lock-player__mode .ico-shuffle { display: block; }
+
+  /* 进度条行：边距与 .panel-toggle 一致；条内 = 工具组 + 当前时刻 + 轨道 + 总时长 */
+  .lock-player__bar {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: var(--bar-bottom);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    pointer-events: none;      /* 仅主面板放行（见下） */
+    transition: opacity 0.3s ease;
+  }
+  /* 交互门控：主面板上功能区整体可点（歌单 / 播放模式无歌曲时也要能用）。传输行是独立层，必须一并放行 */
+  .carousel-panel.is-active .lock-player__bar,
+  .carousel-panel.is-active .lock-player__transport { pointer-events: auto; }
+  /* 无歌曲态：只压暗「传输控件 + 时间 + 轨道」，歌单与模式按钮保持可用 */
+  .carousel-panel:not(.is-audio) .lock-player__transport,
+  .carousel-panel:not(.is-audio) .lock-player__time,
+  .carousel-panel:not(.is-audio) .lock-player__track,
+  .carousel-panel:not(.is-audio) .lock-player__dur { opacity: 0.4; }
+
+  /* 左端工具组（歌单 / 播放模式）；轨道为 flex:1，自动吃掉中间余量 */
+  .lock-player__tools {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: opacity 0.3s ease;      /* 无歌曲态压暗的过渡 */
+  }
+
+  /* 传输组（上一首 / 播放暂停 / 下一首）：单独一行、面板内水平居中，坐在播放条正上方
+     ⚠ 不在 .lock-player__bar 里 → 两处名单要跟：① 上面的门控 ② index.html 的 .no-interact 名单与 JS 点空白收菜单白名单 */
+  .lock-player__transport {
+    position: absolute;
+    left: 50%;
+    bottom: var(--transport-bottom);
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    pointer-events: none;               /* 仅主面板放行（见门控） */
+    transition: opacity 0.3s ease;      /* 无歌曲态压暗的过渡 */
+  }
+  /* 传输行按钮比播放条里那组大一档（主操作）；尺寸走 --transport-h，行高与按钮直径一起动 */
+  .lock-player__transport .lock-player__btn {
+    width: var(--transport-h);
+    height: var(--transport-h);
+  }
+  /* 盒内图标同步放大（全站默认 18）；矢量仍画在 24 网格里，等比内接不会变形 */
+  .lock-player__transport .lock-player__btn svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* 歌曲菜单 */
+  .lock-player__menu {
+    position: absolute;
+    left: 16px;
+    bottom: 64px;
+    width: 320px;
+    max-height: 50%;    /* 相对面板高度，超出部分内部滚动 */
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    border-radius: 16px;
+    background: rgba(45, 45, 45, 0.25);
+    backdrop-filter: blur(32px) saturate(160%) brightness(1.15) contrast(1.05);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(1.15) contrast(1.05);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.25),
+      0 0 16px rgba(45, 45, 45, 0.25),
+      0 0 48px rgba(255, 255, 255, 0.05);
+    opacity: 0;
+    visibility: hidden;
+    transform-origin: left bottom;   /* 自左下角弹出 */
+    pointer-events: none;
+    will-change: transform, opacity;
+    z-index: 12;
+  }
+  /* 命中门控：仅活动面板 + 已展开时放行 */
+  .carousel-panel.is-active.is-menu .lock-player__menu { pointer-events: auto; }
+
+  /* 菜单头：左「标题 + 计数」、右操作按钮组，两端对齐 */
+  .lock-player__menu-head {
+    flex: none;
+    height: 48px; 
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0 8px;
+  }
+  /* 头左标题：横向排列「歌曲菜单」与计数 */
+  .lock-player__menu-title {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-family: var(--text-sans);
+    font-size: var(--text-smallest);
+    font-weight: var(--text-medium);
+    color: var(--white);
+  }
+  /* 头内计数徽标：显示「N 首」 */
+  .lock-player__menu-count {
+    font-family: var(--text-barlow);
+    font-size: var(--text-tiniest);
+    font-weight: var(--text-thin);
+    color: var(--dim);
+    font-variant-numeric: tabular-nums;
+  }
+  /* 头右按钮组：撤回 / 批量删除 / 添加，紧排在标题右侧 */
+  .lock-player__menu-acts {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  /* 头右三个按钮（撤回 / 批量删除 / 添加） */
+  .lock-player__menu-add,
+  .lock-player__menu-del,
+  .lock-player__menu-undo {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--white);
+    cursor: pointer;
+    transition: background-color 0.2s ease,
+                box-shadow 0.2s ease;
+  }
+  /* 头按钮图标尺寸（与歌单按钮同档）；批量删除 / 撤回是纯 stroke 线稿，描边写在 path 上 */
+  .lock-player__menu-add svg,
+  .lock-player__menu-del svg,
+  .lock-player__menu-undo svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+  }
+  .lock-player__menu-add:hover::before,
+  .lock-player__menu-del:hover:not(:disabled)::before,
+  .lock-player__menu-undo:hover:not(:disabled)::before {
+    background: rgba(45, 45, 45, 0.25);
+    backdrop-filter: blur(32px) saturate(160%) brightness(1.15) contrast(1.05);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(1.15) contrast(1.05);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.25),
+      0 0 16px rgba(45, 45, 45, 0.25),
+      0 0 48px rgba(255, 255, 255, 0.05);
+  }
+  /* 批量删除待确认态（.is-armed）：图标换对勾 + 底盘常驻高亮；垃圾桶 / 对勾叠在同一格，只切 display */
+  .lock-player__menu-del .ico-del,
+  .lock-player__menu-del .ico-ok { grid-area: 1 / 1; }
+  .lock-player__menu-del .ico-ok { display: none; }
+  .lock-player__menu-del.is-armed .ico-del { display: none; }
+  .lock-player__menu-del.is-armed .ico-ok { display: block; }
+  .lock-player__menu-del.is-armed:not(:disabled)::before {
+    background: rgba(255, 255, 255, 0.16);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  }
+  /* 空歌单 / 无可撤的步数 → 禁用（压暗 + 不吃指针，hover 完全无响应） */
+  .lock-player__menu-del:disabled,
+  .lock-player__menu-undo:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
+
+  /* 列表容器：padding 与负 margin 等值抵消 → 行体位置宽度不变，外侧多出溢出区，
+     供 hover 的放大 + 倾斜不被 scrollport 切边。
+     ⚠ 预算与 JS 的 ROW_SCALE / ROW_TILT / ROW_PERSP 对应，调大要同步这里 */
+  .lock-player__list {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 8px 16px;
+    margin: -8px -16px;
+    border-radius: 8px;
+    list-style: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    /* 只隐藏滚动条，滚轮 / 拖拽滚动照旧可用 */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .lock-player__list::-webkit-scrollbar { display: none; }
+
+  /* 歌单行：固定行高（拖拽按实测 offsetHeight 换算位移），整行即抓取区；行内 = 序号 / 曲名 / 时长 */
+  .lock-player__item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    border-radius: 8px;
+    padding: 8px;
+    color: var(--white);
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;                 /* 关掉浏览器手势，拖拽全程交给 pointermove */
+    transition: background-color 0.2s ease;
+  }
+  /* ⚠ 行间距必须与 JS 的 ROW_GAP 一致，否则拖拽让位错位（首行无上边距、末行无下边距） */
+  .lock-player__item + .lock-player__item { margin-top: 4px; }
+  /* 悬停行 */
+  .lock-player__item:hover { background: rgba(255, 255, 255, 0.10); }
+  /* 当前播放行：底色深一档，配合曲名加粗 */
+  .lock-player__item.is-current { background: rgba(255, 255, 255, 0.20); }
+  /* 拖拽中的行：浮起跟随指针（其余行实时让位）；材质与 .lock-player__menu 同款，
+     will-change 独占合成层，逐帧写 translate3d 不触发整表重排 */
+  .lock-player__item.is-dragging {
+    z-index: 10;
+    cursor: grabbing;
+    will-change: transform;
+    background: rgba(45, 45, 45, 0.25);
+    backdrop-filter: blur(32px) saturate(160%) brightness(1.15) contrast(1.05);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(1.15) contrast(1.05);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.25),
+      0 0 16px rgba(45, 45, 45, 0.25),
+      0 0 48px rgba(255, 255, 255, 0.05);
+  }
+
+  /* 批量删除勾选框（圆形描边，勾选后白底 + 深色对勾）；仅选择态生成 → 平时不占位 */
+  .lock-player__check {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+    color: var(--black);
+  }
+  .lock-player__check svg { width: 14px; height: 14px; display: block; opacity: 0; }
+  .lock-player__check.is-on { background: var(--white); box-shadow: none; }
+  .lock-player__check.is-on svg { opacity: 1; }
+  /* 已勾选行：与 .is-current 同档底色，hover 更深一档以示可继续点 */
+  .lock-player__item.is-selected { background: rgba(255, 255, 255, 0.10); }
+  /* 选择态整表禁拖拽（.is-select）→ 光标改手型，与「点行 = 勾选」对齐 */
+  .lock-player__menu.is-select .lock-player__item { cursor: pointer; }
+
+  /* 行内序号：固定宽，保证 1 / 2 位数不左右跳 */
+  .lock-player__index {
+    flex: none;
+    width: 16px;
+    text-align: left;
+    font-family: var(--text-barlow);
+    font-size: var(--text-tiniest);
+    font-weight: var(--text-thin);
+    color: var(--dim);
+    font-variant-numeric: tabular-nums;
+  }
+  /* 曲名：默认单份、放不下由省略号收尾（裁切由外层这个 flex 项负责） */
+  .lock-player__name {
+    --name-gap: 32px;          /* 循环滚动时两份文本之间的间距（别设太小，否则读着赶） */
+    flex: 1 1 auto;
+    min-width: 0;
+    font-family: var(--text-sans);
+    font-size: var(--text-tiny);
+    font-weight: 400;
+    color: var(--white);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* 当前播放曲目的曲名：字重加粗一档 */
+  .lock-player__item.is-current .lock-player__name { font-weight: var(--text-medium); }
+
+  /* ---------- 放不下的曲名：循环滚动（只在「当前曲」与 hover 的那一行） ----------
+     syncNameScroll() 建：「当前曲 / 被 hover」且「真装不下」时才换成轨道 + 两份文本，其余保持单份。
+     整条轨道匀速左移自身一半 = 一份文本 + 一个间距 → 衔接无缝。
+     旋钮：--name-gap 两份文本间距 · --name-dur 一个循环时长（JS 按实际距离折算，速度恒定）
+     · NAME_SCROLL_SPEED 速度常量在 JS 里。第二份文本带 aria-hidden */
+  .lock-player__name.is-scroll { text-overflow: clip; }   /* 滚动中别再冒省略号 */
+  .lock-player__nameTrack { display: inline-block; }
+  .lock-player__nameRun { padding-right: var(--name-gap); }
+  /* 默认冻结，下面那条再放行（菜单收起 / 面板不在前台时不必空转） */
+  .lock-player__name.is-scroll .lock-player__nameTrack {
+    animation: lock-name-marquee var(--name-dur, 8s) linear infinite paused;
+    will-change: transform;
+  }
+  /* 门控同 .lock-player__menu：菜单真展开着才滚 */
+  .carousel-panel.is-active.is-menu .lock-player__name.is-scroll .lock-player__nameTrack {
+    animation-play-state: running;
+  }
+  @keyframes lock-name-marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+
+  /* 单曲时长 */
+  .lock-player__len {
+    flex: none;
+    font-family: var(--text-barlow);
+    font-size: var(--text-tiniest);
+    font-weight: var(--text-thin);
+    color: var(--dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 空态提示：有曲目后由 JS 给面板加 .has-tracks 隐藏 */
+  .lock-player__empty {
+    margin: 0;
+    padding: 18px 4px;
+    font-family: var(--text-sans);
+    font-size: var(--text-tiny);
+    font-weight: var(--text-thin);
+    color: var(--dim);
+    text-align: center;
+  }
+  .carousel-panel.has-tracks .lock-player__empty { display: none; }
+
+  .lock-player__time,
+  .lock-player__dur {
+    flex: none;
+    font-family: var(--text-barlow);
+    font-size: var(--text-tiny);
+    font-weight: var(--text-thin);
+    line-height: 1;
+    color: var(--white);
+    font-variant-numeric: tabular-nums; /* 等宽数字，跳秒不抖动 */
+    user-select: none;
+    transition: opacity 0.3s ease;      /* 无歌曲态压暗的过渡 */
+  }
+  .lock-player__dur { color: var(--dim); }   /* 总时长弱化一档 */
+
+  /* 拖拽命中区（高于视觉轨道，便于抓取）；轨道 4px 居中 */
+  .lock-player__track {
+    position: relative;
+    flex: 1;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    touch-action: none;        /* 允许 pointer 拖拽而不触发页面手势 */
+    user-select: none;
+    transition: opacity 0.3s ease;      /* 无歌曲态压暗的过渡 */
+  }
+  .lock-player__rail {
+    position: relative;
+    width: 100%;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
+  }
+  /* 进度填充与滑块位置共用轨道上的 --p（0~1，由 JS 写入） */
+  .lock-player__fill {
+    width: calc(var(--p, 0) * 100%);
+    height: 100%;
+    border-radius: inherit;
+    background: var(--white);
+  }
+  .lock-player__thumb {
+    position: absolute;
+    left: calc(var(--p, 0) * 100%);
+    top: 50%;
+    width: 12px;
+    height: 12px;
+    margin: -6px 0 0 -6px;
+    border-radius: 50%;
+    background: var(--white);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+    transition: transform 0.15s ease;
+  }
+  .lock-player__track:hover .lock-player__thumb { transform: scale(1.15); }
+
+  /* 原生文件选择器：只做触发，不出现在布局里 */
+  .lock-file { display: none; }
+
+  /* ===== 顶栏居中的常驻迷你播放器 =====
+     与第四面板的播放器是同一台播放器的两张脸：曲名 / 进度 / 按钮可用性都由 JS 那几个
+     「唯一写入口」一并写两处，这里只管胶囊本身、一行曲名与内圈那圈进度描边。
+     ⚠ 常驻在顶栏那一行，与 .topbar 内容同高（80px）→ 窄屏靠 max-width 让开左端的
+     圆点 + STRCAT 与右端的菜单按钮。 */
+  .mini-player {
+    --mini-w: 320px;      /* 胶囊长 */
+    --mini-h: 36px;       /* 胶囊高 */
+    --mini-btn: 28px;     /* 右端按钮直径（比胶囊矮一档 → 圆底上下各留一圈余量） */
+    --mini-ring: 1px;     /* 进度环线宽（= 那圈淡白内描边的宽度，两者重合） */
+    --mini-pad: 16px;     /* 左端文字距胶囊内壁 */
+    position: absolute;
+    left: 0;
+    right: 0;
+    margin: 0 auto;       /* 左右留白均分 → 视口居中（顶栏左右 padding 对称，故也是顶栏居中） */
+    top: calc((80px - var(--mini-h)) / 2);   /* 顶栏实高 80px：胶囊在其中垂直居中 */
+    width: var(--mini-w);
+    max-width: calc(100vw - 460px);  /* 窄屏让开左端标题与右端菜单：宁可裁短，也不叠压 */
+    height: var(--mini-h);
+    display: flex;
+    align-items: center;
+    gap: var(--mini-pad);
+    padding: 0 6px 0 var(--mini-pad);   /* 右侧 6px：末枚圆底与胶囊端头同心留一圈 */
+    border-radius: 999px;            /* 胶囊 */
+    /* 底色 / 毛玻璃 / 描边 / 投影与面板 .carousel-panel 完全同款 */
+    background: rgba(45, 45, 45, 0.25);
+    backdrop-filter: blur(32px) saturate(160%) brightness(1.15) contrast(1.05);
+    -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(1.15) contrast(1.05);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.25),
+      0 0 16px rgba(45, 45, 45, 0.25),
+      0 0 48px rgba(255, 255, 255, 0.05);
+    z-index: 20;              /* 与 .bottom-nav 同层，高于面板（GSAP zIndex ≤5） */
+    pointer-events: auto;     /* .carousel 本体不吃指针，这一层要常驻可点 */
+  }
+
+  /* 进度环：沿胶囊内圈的一条白描边，长度 = 已播比例，自顶边中点顺时针延长。
+     SVG 描边是「居中于路径」的 → 路径内缩半个线宽，外沿正好压在胶囊边界上 = 内描边，
+     宽度又与那圈淡白 inset 描边同值 → 两者完全重合。改线宽只动 --mini-ring，内缩跟着派生。
+     路径点由 JS 现算（buildMiniRing）：圆角半径 = 净高的一半，起点落在顶边中点 ——
+     <rect> 的路径起点钉在左上圆角之后，改不动，才换的 <path>。
+     ⚠ **别在这里写 `stroke-dasharray`**：CSS 会压过 JS 写的同名 attribute（属性优先级最低），
+     进度就永远停在 CSS 那个值上、推不动。dash 只由 `setLockProgress()` 写，初始归零也在 JS 里。 */
+  .mini-player__ring {
+    position: absolute;
+    left: calc(var(--mini-ring) / 2);      /* 内缩半个线宽：描边的外半圈才落在胶囊之内 */
+    top: calc(var(--mini-ring) / 2);
+    /* ⚠ 宽高必须显式写：SVG（替换元素）宽高为 auto 时用**固有尺寸 300×150**，
+       只给 inset 不会拉伸 → 环会变成 300×150 的一个椭圆角矩形（踩过） */
+    width: calc(100% - var(--mini-ring));
+    height: calc(100% - var(--mini-ring));
+    overflow: visible;      /* ⚠ SVG 根元素默认 overflow:hidden —— 路径贴在视口边上时，描边的外半圈会被裁掉
+                               （两端圆角处最明显，看着像豁了口）。内缩已保证它溢不出胶囊，这里放行即可。 */
+    pointer-events: none;
+  }
+  .mini-player__ring path {
+    fill: none;
+    stroke: var(--white);
+    stroke-width: var(--mini-ring);
+    stroke-linecap: butt;                  /* 圆头会在起点多凸出一个点 */
+  }
+
+  /* 左端一行曲名：本体就是歌单菜单那套 .lock-player__name（含走马灯的轨道 / 两份文本 / 省略号），
+     这里只改字号 + 去掉 flex 拉伸 —— 它是本 column 的成员，flex:1 会把这一行撑高 */
+  .mini-player__info {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;   /* 单行也垂直居中 */
+    pointer-events: none;      /* 文字不吃指针：胶囊里只有右端三键可点 */
+  }
+  .mini-player__name {
+    flex: none;
+    font-size: var(--text-tiniest);
+    line-height: 1;
+  }
+  /* 走马灯门控：歌单菜单要「菜单真展开」才滚，这块是常驻的 → 装不下就一直滚。
+     另一条（动画本体与 paused 初值）在 .lock-player__name 一节，靠源码顺序压过后再放开 */
+  .mini-player__name.is-scroll .lock-player__nameTrack { animation-play-state: running; }
+
+  /* 右端三键：等距 8px 排开，盒尺寸走 --mini-btn（与胶囊高解耦：
+     三枚直径 = 3×--mini-btn，想给文字让宽就压它或改这里的 gap） */
+  .mini-player__ctrls {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .mini-player__ctrls .lock-player__btn {
+    width: var(--mini-btn);
+    height: var(--mini-btn);
+  }
+  /* 播放态图标切换：第四面板靠 .carousel-panel.is-playing 门控，这块不在面板里 → 挂自己的 .is-playing */
+  .mini-player.is-playing .lock-player__play .ico-play { display: none; }
+  .mini-player.is-playing .lock-player__play .ico-pause { display: block; }
