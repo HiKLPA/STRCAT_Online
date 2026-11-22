@@ -2,7 +2,7 @@
 
 An interactive platform for real-time conversations with STRCAT, a lively and customizable mascot inspired by the `strcat()` function of C.
 
-一个跑在浏览器里的吉祥物站点：Three.js 渲染的三渲二小猫站在页面中央，绕它一圈是字符环；点击本体即可与它对话，回答会写在那圈字符上。四个毛玻璃面板承载形象介绍、衍生文创、定制入口与播放器，全部塞在同一个视口里，没有滚动条。
+一个支持高度定制的吉祥物网站：Three.js渲染的三渲二小猫STRCAT悬浮在页面中央，绕它一圈是字符环；点击本体即可与它对话，回答会写在那圈字符上。点击底部弹窗按钮会弹出四个面板，分别承载形象介绍、衍生文创介绍、定制菜单与锁屏音乐播放器。
 
 在线预览：<https://hiklpa.github.io/STRCAT_Online/>（启用 GitHub Pages 后生效，见文末）
 
@@ -98,7 +98,7 @@ cp js/ai-config.example.js js/ai-config.js
 
 ## 已知限制
 
-- 音乐播放器不内置音频，歌单由用户自己导入本地文件（浏览器限制，刷新后需重新导入）
+- 音乐播放器不内置音频，由用户导入本地文件
 - 定制结果不持久化，刷新恢复默认
 - 需要支持 WebGL2 的现代浏览器
 
@@ -108,7 +108,7 @@ cp js/ai-config.example.js js/ai-config.js
 
 站点内容、吉祥物形象与衍生设计归作者所有，代码仅供学习参考，未经许可请勿商用或二次发布形象素材。
 
-## 启用 GitHub Pages（可选）
+## 启用 GitHub Pages
 
 仓库 Settings → Pages → Source 选 `Deploy from a branch`，分支 `main` / 目录 `/ (root)`，保存后访问
 `https://hiklpa.github.io/STRCAT_Online/`。若走 Pages，AI 必须用 `worker/` 代理，否则没有后端可用。
