@@ -6,21 +6,24 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-top: 52px;          /* 与 .panel-scroll 顶部内边距 12px 合计 = 原 absolute top 64px */
+    /* 顶部留白：与 .panel-scroll 的 12px 顶部内边距相加 = --panel-top（64px），
+       与衍生、定制面板的首块内容上沿对齐 */
+    padding-top: calc(var(--panel-top, 64px) - 12px);
     pointer-events: none;
   }
   .panel-title {
     font-family: var(--text-barlow);
-    font-size: 192px;
+    /* 11vw 是「标题恰好装进面板」的上限：面板宽 80vw，标题（13 字符）在 192px 时约 1382px 宽，
+       要留在 80vw 之内，字号不能超过约 11.1vw。宽屏仍封顶 192px，窄屏按比例收，
+       两端不再把字形切掉（去掉了负字距后标题比原来宽约 46px，按原值会在 1600 及以下断字） */
+    font-size: min(192px, 11vw);
     font-weight: var(--text-heavy);
-    line-height: 1;
     color: var(--white);
     text-align: center;
     white-space: nowrap;
     user-select: none;
     pointer-events: none;     /* 跟随父 .panel-hero：非中间(侧位)面板不响应 hover；仅 is-active 面板放行 */
     transform: scaleY(1.12);   /* 字形纵向拉长 */
-    letter-spacing: -0.02em;
   }
   /* 仅中间主面板放行字母 hover 命中（字形热区判定在标题容器） */
   .carousel-panel.is-active .panel-title {
@@ -29,7 +32,6 @@
   /* 单字母：字形级热区 hover（命中由标题容器 pointermove 判定，字母本体不接事件） */
   .panel-letter {
     display: inline-block;
-    line-height: 0.75;         /* 收紧竖直命中区至字形高 */
     pointer-events: none;      /* 热区判定统一在标题容器 */
     will-change: transform;
   }
@@ -50,30 +52,277 @@
   .panel-stripe--yellow { background: var(--yellow); }
   .panel-stripe--blue   { background: var(--blue); }
 
-  /* 大标签组（形象•IMAGE · 色彩•COLOR） */
-  .panel-tags {
-    margin-top: 16px;
+  /* ---------- 下半页 · 设计理念 / 设计要素 / 设计意义 ---------- */
+  /* 整块不接指针：滚轮落在文字上照旧滚 .panel-scroll（滚动条在容器那层），
+     面板处于侧位 / 移动中时也不会被这些文字挡住其它命中 */
+  .idea {
+    /* 左右留白与衍生面板同值（.deriv-scroll 的 clamp(24px, 3.2vw, 56px)）：两页文字起始线对齐 */
+    margin: clamp(40px, 7vh, 88px) clamp(24px, 3.2vw, 56px) 0;
+    padding-bottom: 96px;                 /* 滚到底时最后一节不贴面板下沿 */
     display: flex;
-    gap: 32px;
+    flex-direction: column;
+    gap: clamp(48px, 8vh, 88px);
+    pointer-events: none;
   }
-  .panel-tag {
-    color: var(--white);
-    font-family: var(--text-sans);
-    font-size: var(--text-small);
-    font-weight: 600;
-    white-space: nowrap;
+  /* 分节左右错开：01 靠左、02 靠右、03 再靠左（奇偶次序，加节只需保持顺序）。
+     节宽固定收窄，留出的空档就是错位的量；.idea 是 flex 列，align-self 直接把节推到两端。 */
+  .idea-sec {
+    width: min(100%, 760px);
+    /* 序号列宽 + 列间距 = 正文的右缩量。整节左侧内缩这个量，正文、子块、代码块、收束句
+       的起笔线便落在中文标题的第一个字上，而不是落在序号上（分节头再用负外边距顶回去） */
+    --no-w: 40px;
+    --no-gap: 16px;
+    padding-left: calc(var(--no-w) + var(--no-gap));
   }
-  /* 「形象设计」大标题：标签组下方、距面板左边 64px（正常流左对齐，参与滚动高度） */
-  .panel-identity {
-    align-self: flex-start;
-    margin: 256px 0 0 96px;
-    color: var(--white);
+  .idea-sec:nth-child(odd)  { align-self: flex-start; }
+  .idea-sec:nth-child(even) { align-self: flex-end; }
+  /* 02 节左侧的轨道：三只纯色小 STRCAT 绕一个圆心公转，圆心落在面板左边框上。
+     画布只铺面板内那半边 —— 左半圆本来就在面板外，被面板 overflow 裁掉，画了也看不见。
+     尺寸 / 位置由脚本按面板宽度算成 CSS 变量（--orbit-x 是负的节左沿偏移，让画布左缘贴面板边框） */
+  .idea-sec--orbit { position: relative; }
+  .idea-orbit {
+    position: absolute;
+    left: var(--orbit-x, 0);
+    top: var(--orbit-y, 0);
+    width: var(--orbit-w, 0);
+    height: var(--orbit-h, 0);
+    pointer-events: none;
+  }
+  .idea-orbit canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  /* 分节头：编号（红）+ 中英标题 + 细分隔线，与第二面板 .deriv-head 同一套语言。
+     用固定列宽而非自然宽：标题的起笔位置因此是个确定值（40+16），正文才好对齐；
+     负外边距把分节头顶回节的左沿，序号仍挂在正文列之外的最左侧 */
+  .idea-head {
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--no-w) minmax(0, 1fr);
+    column-gap: var(--no-gap);
+    align-items: baseline;
+    margin-left: calc(-1 * (var(--no-w) + var(--no-gap)));
+    padding-bottom: 12px;
+  }
+  /* 细线只压在正文列上：左端从标题首字起（跳过年序号），右端到节的右沿，
+     长度与下方正文段落一致。原先 border 铺满整行，比正文宽出序号那一截 */
+  .idea-head::after {
+    content: "";
+    position: absolute;
+    left: calc(var(--no-w) + var(--no-gap));
+    right: 0;
+    bottom: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+  }
+  .idea-head__no {
     font-family: var(--text-barlow);
-    font-size: var(--text-giant);
-    font-weight: 600;
-    line-height: 1;
+    font-size: var(--text-big);         /* 与分节标题同号：序号作为标题的一部分，不再是小标签 */
+    font-weight: var(--text-medium);
+    color: var(--red);                   /* 底色：接三色母题，各节按次序取红 / 黄 / 蓝 */
+    font-variant-numeric: tabular-nums;
+  }
+  .idea-sec:nth-child(2) .idea-head__no { color: var(--yellow); }
+  .idea-sec:nth-child(3) .idea-head__no { color: var(--blue); }
+  .idea-head__title {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    font-family: var(--text-sans);
+    font-size: var(--text-big);
+    font-weight: var(--text-medium);
+    color: var(--white);
+  }
+  .idea-head__en {
+    font-family: var(--text-barlow);
+    font-size: var(--text-tiny);
+    font-weight: var(--text-thin);
+    color: var(--dim);
+  }
+
+  /* 正文：中英统一 16px，行高不设（继承各字体的 normal），字号层级靠字重与颜色拉开 */
+  .idea-p {
+    margin-top: 16px;
+    max-width: 100%;      /* 宽度吃满 .idea-sec 的内容宽（760 减去序号列缩进），段落不再另行收窄 */
+    font-family: var(--text-sans);
+    font-size: var(--text-smallest);
+    font-weight: 400;
+    color: var(--white);
+    text-align: justify;
+  }
+  .idea-p--en {
+    font-family: var(--text-barlow);
+    font-size: var(--text-smallest);
+    color: var(--dim);
+  }
+  /* 行内代码：正文里嵌函数名用（底色一档亮、圆角小，不做成按钮样） */
+  .idea-p code {
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: var(--text-smallest);
+  }
+  /* 独立代码块：左侧一道红边（三色母题里只取主色，避免和正文抢视觉） */
+  .idea-code {
+    display: inline-block;
+    max-width: 100%;
+    margin-top: 24px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    border-left: 4px solid var(--red);
+    background: rgba(255, 255, 255, 0.05);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: var(--text-smallest);
+    color: var(--white);
     white-space: nowrap;
-    user-select: none;
+  }
+
+  /* 要素子块：形象 / 色彩 */
+  .idea-sub { margin-top: 40px; }
+  .idea-sub__title {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    font-family: var(--text-sans);
+    font-size: var(--text-normal);
+    font-weight: var(--text-medium);
+    color: var(--white);
+  }
+  .idea-sub__en {
+    font-family: var(--text-barlow);
+    font-size: var(--text-tiny);
+    font-weight: var(--text-thin);
+    color: var(--dim);
+  }
+  /* 形象三件套：左词条右说明的一行一条，首尾各一条细线 */
+  .idea-facts {
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+  }
+  .idea-fact {
+    display: grid;
+    grid-template-columns: 132px minmax(0, 1fr);
+    gap: 24px;
+    align-items: baseline;
+    padding: 14px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.10);
+  }
+  .idea-fact:last-child { border-bottom: 1px solid rgba(255, 255, 255, 0.10); }
+  .idea-fact dt {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-family: var(--text-sans);
+    font-size: var(--text-smallest);
+    font-weight: var(--text-medium);
+    color: var(--white);
+  }
+  .idea-fact__en {
+    font-family: var(--text-barlow);
+    font-size: var(--text-tiny);
+    font-weight: var(--text-thin);
+    color: var(--dim);
+  }
+  .idea-fact dd {
+    font-family: var(--text-sans);
+    font-size: var(--text-smallest);
+    color: var(--grey);
+  }
+  /* 三色：色点 + 中英色名 + 一句释义（色值由行内 --c 指定） */
+  .idea-colors {
+    margin-top: 24px;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+  }
+  .idea-color {
+    display: grid;
+    grid-template-columns: 20px 200px minmax(0, 1fr);
+    gap: 20px;
+    align-items: center;
+    padding: 16px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.10);
+  }
+  .idea-color:last-child { border-bottom: 1px solid rgba(255, 255, 255, 0.10); }
+  .idea-color i {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--c);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  }
+  .idea-color b {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-family: var(--text-sans);
+    font-size: var(--text-smallest);
+    font-weight: var(--text-medium);
+    color: var(--white);
+  }
+  .idea-color b span {
+    font-family: var(--text-barlow);
+    font-size: var(--text-tiny);
+    font-weight: var(--text-thin);
+    color: var(--dim);
+  }
+  .idea-color p {
+    font-family: var(--text-sans);
+    font-size: var(--text-smallest);
+    color: var(--grey);
+  }
+  /* 收束句：整页的落款，是 .idea 的直接子项（不在 03 节里），宽度吃满 .idea 的内容盒，
+     因此按面板宽度居中；与 03 的间隔由 .idea 的 gap 给（与节间同值），不再自带外边距。
+     它可点可悬停：父级 .idea 一律不接指针，这里单独放行，且只在主面板生效 */
+  .idea-coda {
+    margin: 0;
+    text-align: center;
+    transform-origin: 50% 50%;
+    /* 抬到彩带层（.cf-layer--idea 的 z-index: 4）之上：点击喷出的小猫从文字后面的图层钻出来，
+       先被字挡住、再飞出字外。两者同在 .carousel-panel 的层叠上下文里（.panel-scroll 没建上下文） */
+    position: relative;
+    z-index: 5;
+    pointer-events: none;             /* 侧位面板 / 面板移动中不响应 */
+    will-change: transform;
+    font-family: var(--text-barlow);
+    font-size: var(--text-large);
+    font-weight: var(--text-medium);
+    color: var(--white);
+  }
+  .carousel-panel.is-active .idea-coda {
+    pointer-events: auto;
+    cursor: pointer;
+  }
+  /* hover 的放大与倾斜交给 GSAP（歌单行那套磁吸，见 index.html 的 codaMagnet）：
+     这里不能留 transform 过渡 —— 会与 GSAP 每帧写的 transform 叠成拖尾 */
+
+  /* 收束句的点击彩带层：铺满面板，喷出的小猫不受正文裁切；本身不吃指针。
+     选择器写双类：index.html 内联样式里的 .cf-layer 也给了 z-index: 0，且排在本文件之后，
+     单个类名比不过它，小猫会被正文压住 */
+  .cf-layer.cf-layer--idea {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+  }
+  /* 单枚小 STRCAT：尺寸 / 颜色由 JS 内联写，这里只管定位与命中；left/top 归零，位置交给 GSAP 的 x / y */
+  .cf-cat {
+    position: absolute;
+    left: 0;
+    top: 0;
+    will-change: transform, opacity;
+  }
+  .cf-cat svg { display: block; width: 100%; height: 100%; }
+  /* 收束句的英文：另起一行、18px、走灰 —— 中文 48px 与它拉出层级，别让两行抢同一个重心 */
+  .idea-coda__en {
+    display: block;
+    margin-top: 12px;
+    font-family: var(--text-barlow);
+    font-size: 18px;
+    font-weight: var(--text-thin);
+    color: var(--dim);
   }
 
   /* 第一面板：内容纵向可滚（标题/色带/标签/形象设计超面板高时滚轮查看） */
@@ -82,6 +331,11 @@
     padding: 0;              /* 内边距由 .panel-scroll 接管 */
   }
   .panel-scroll {
+    /* 必须显式吃满面板宽：宽度留 auto 时，容器会按内容的最小宽度定尺寸 ——
+       大标题是 nowrap，Barlow 没加载出来时它的固有宽度（约 1382px）会超过面板宽（80vw），
+       于是整块内容被撑宽并居中溢出，被面板的 overflow: hidden 从两侧裁掉：
+       表现就是标题两头断字、正文贴到面板边缘（看起来像没有留白）。 */
+    width: 100%;
     height: 100%;
     padding: 12px 0 24px;    /* 顶部对齐原面板内边距；底部留滚动余量 */
     overflow-y: auto;

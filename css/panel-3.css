@@ -1,56 +1,50 @@
 /* ===== 第三面板 · 定制（.panel-join / .panel-circles）：双语标题与正文、定制触发按钮、可拖拽元素 =====
    样式自 index.html 内联 <style> 拆出（原分散三处，此处合为一份，选择器无交集） */
 
-  /* 第三「定制」面板：双语标题（顶部区）。左 STRCAT(Barlow 128px) + 右两行中文(60px)，两侧等高 */
+  /* 第三「定制」面板：顶部标题。单个中文词「定制」（96px，Barlow 无 CJK 字形，回退思源黑体） */
   .panel-join {
     position: absolute;
-    top: 64px;
-    left: 64px;
+    top: var(--panel-top, 64px);   /* 与元素、衍生面板的首块内容上沿同一条线 */
+    /* 左右留白与衍生面板同值（.deriv-scroll 的 clamp(24px, 3.2vw, 56px)）：
+       三块面板的文字起始线因此对齐。给 right 是为了让正文有确定的可用宽度，窄屏不再顶出面板 */
+    left: clamp(24px, 3.2vw, 56px);
+    right: clamp(24px, 3.2vw, 56px);
     z-index: 1;              /* 内容层，低于右上按钮 z10 */
     pointer-events: none;    /* 不挡定制按钮/3D 交互 */
     display: flex;
     flex-direction: column;
     align-items: flex-start;
   }
+  /* 标题行：中文大字与右侧双行英文小注并排。英文底边对齐标题基线（略抬 12px 抵消
+     96px 字号的行框下沉量），读起来像挂在标题右肩的副标，而不是居中悬浮的一块 */
   .panel-join__main {
     display: flex;
-    align-items: center;     /* 右中文块相对 STRCAT 垂直居中 → 等高感 */
+    align-items: flex-end;
     gap: 32px;
   }
   .panel-join__word {
     font-family: var(--text-barlow);
-    font-size: 128px;
+    font-size: 96px;
     font-weight: 600;
     color: var(--white);
-    line-height: 1;
     white-space: nowrap;
   }
-  .panel-join__cn {
-    display: flex;
-    flex-direction: column;
-  }
-  .panel-join__cn-line {
-    font-family: var(--text-sans);        /* 思源黑体 */
-    font-size: var(--text-large);
-    font-weight: 600;
-    color: var(--white);
-    line-height: 1;
-    white-space: nowrap;
-  }
-  .panel-join__cn-line + .panel-join__cn-line {
-    margin-top: 4px;
-  }
+  /* 标题右侧双行英文（换行由 <br> 控制，故保留 nowrap 不自动折）
+     原先是标题下方的独立一行，现挪进 .panel-join__main，靠 flex-end 与标题底边对齐 */
   .panel-join__en {
+    flex: none;
+    margin-bottom: 12px;
     font-family: var(--text-barlow);
     font-size: var(--text-normal);
     font-weight: 500;
     color: var(--grey);
     white-space: nowrap;
   }
-  /* 定制面板正文 */
+  /* 定制面板正文：宽度上限 680px 保持原有行长，面板变窄时收到可用宽度，不顶出右边界 */
   .panel-join__body {
     margin-top: 32px;
-    width: 680px;
+    width: 100%;
+    max-width: 680px;
   }
   .panel-join__body p {
     text-align: justify;
@@ -59,14 +53,12 @@
     font-family: var(--text-sans);
     font-size: var(--text-smallest);
     font-weight: 400;
-    line-height: 1.4;
     color: var(--white);
   }
   .panel-join__en-p {
     font-family: var(--text-barlow);
     font-size: var(--text-tiny);
     font-weight: 400;
-    line-height: 1.2;
     margin-top: 4px;
     color: var(--grey);
   }
@@ -91,7 +83,6 @@
     border: none;
     color: var(--white);
     cursor: pointer;
-    line-height: 1;
   }
   /* 底盘：常驻 1px 内描边（胶囊形），hover 叠底色与光晕 —— 全在 ::before 上随 --btn-pop 缩放，本体零 transform */
   .customize-trigger::before {

@@ -42,6 +42,10 @@
   /* 字体 */
     --text-sans: "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
     --text-barlow: "Barlow", "Noto Sans SC", "PingFang SC", sans-serif;
+  /* 版式：三个内容面板（元素 / 衍生 / 定制）顶部到首块内容的上沿统一 64px，
+     各面板自己的内边距从这 64 里扣（见 panel-1.css 的 .panel-hero、panel-2.css 的 .deriv-intro、
+     panel-3.css 的 .panel-join） */
+    --panel-top: 64px;
   }
 
   /* 全局 */
@@ -452,7 +456,6 @@
     font-size: var(--text-normal);
     font-weight: var(--text-medium);
     color: var(--white);
-    line-height: 1;
   }
 
   .customize-close {
@@ -542,7 +545,6 @@
     font-family: var(--text-sans);
     font-size: var(--text-tiny);
     font-weight: var(--text-thin);
-    line-height: 1;                /* 写死行高：标题行高度只由 min-height 决定，不吃字体度量 */
     color: var(--dim);
   }
   .color-reset {
@@ -973,7 +975,7 @@
                          data-panel 写「内容名」而非数字索引，由 JS 拿 HINT_TITLES.indexOf 解析 —— 面板顺序调整时不会指错页。
                          data-label 供 CSS attr() 取用，刻意不复用 aria-label，免得将来无障碍名称变长连画面标签一起变。
                          第三枚带 data-customize —— 不跳页面，直接弹出左右两个定制子面板。 -->
-          <button class="menu-item" type="button" data-panel="元素" data-label="元素" aria-label="元素">
+          <button class="menu-item" type="button" data-panel="介绍" data-label="介绍" aria-label="介绍">
             <!-- 简介：一页文档（evenodd 外框挖空 + 两条文字行）—— 第一面板就是形象简介页 -->
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path fill="currentColor" fill-rule="evenodd" d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm0 2v14h14V5H5Z"/>
@@ -1037,36 +1039,210 @@
           <span class="panel-stripe panel-stripe--yellow"></span>
           <span class="panel-stripe panel-stripe--blue"></span>
         </div>
-        <div class="panel-tags" aria-hidden="true">
-          <span class="panel-tag">形象•IMAGE</span>
-          <span class="panel-tag">色彩•COLOR</span>
-        </div>
-        <div class="panel-identity">形象设计</div>
       </div>
+
+      <!-- 下半页：设计理念 / 设计要素 / 设计意义（据 Material/INTRO.docx 改写）。
+           大标题与三色带保持原样，这里只接在它下面，整页随 .panel-scroll 纵向滚动。
+           版式语言与第二面板（.deriv-*）同源：编号 + 中英标题 + 细分隔线。 -->
+      <div class="idea">
+
+        <!-- 01 设计理念 -->
+        <section class="idea-sec">
+          <header class="idea-head">
+            <span class="idea-head__no">01</span>
+            <h2 class="idea-head__title">设计理念<span class="idea-head__en">IDEA</span></h2>
+          </header>
+          <p class="idea-p">学 C 语言的人大多写过这一行：<code>char *strcat(char *dest, const char *src);</code>它把 src 追加到 dest 的末尾，两条字符串就此接成更长的一条。软件工程学院讲「软工定义世界」——一代代新青年在前人打下的基础上不断进取、敢于创新，一步步拓展着世界的边界。世界是智能的，世界是美丽的，未来世界的每一种样貌，都能由软工的师生亲手定义。</p>
+          <p class="idea-p">于是 str 与 cat 接在一起：字符加猫猫。STRCAT 的主体，就是从这一行代码里长出来的。</p>
+          <p class="idea-code" aria-label="strcat 函数原型">char *strcat(char *dest, const char *src);</p>
+          <p class="idea-p idea-p--en">If you have learnt C, this line is probably familiar: strcat appends one string to another, and two strings become a longer one. The School of Software Engineering says that software defines the world — each generation pushes the boundary further. Every possible shape of the future can be written by the people here.</p>
+          <p class="idea-p idea-p--en">So str meets cat, a string plus a cat, and the body of STRCAT grew out of that single line.</p>
+        </section>
+
+        <!-- 02 设计要素：形象 + 色彩 -->
+        <section class="idea-sec idea-sec--orbit">
+          <!-- 左侧轨道：三只纯色小 STRCAT 绕圆心公转（圆心落在面板左边框上，画布与猫由脚本铺设） -->
+          <div class="idea-orbit" aria-hidden="true"><canvas></canvas></div>
+          <header class="idea-head">
+            <span class="idea-head__no">02</span>
+            <h2 class="idea-head__title">设计要素<span class="idea-head__en">ELEMENTS</span></h2>
+          </header>
+
+          <div class="idea-sub">
+            <h3 class="idea-sub__title">形象<span class="idea-sub__en">FORM</span></h3>
+            <p class="idea-p">本体是一枚悬浮的椭球体星球，三条环带绕着它转；耳朵取勒洛四面体的轮廓，靠磁吸挂在星球两侧，可以取下，也可以换色；最外一圈星环由字符串组成，写什么都行。三件合起来，是一只能在银河里自在长大的猫。</p>
+            <p class="idea-p idea-p--en">The body is a levitating ellipsoid planet circled by three bands. The ears follow the outline of a Reuleaux tetrahedron and are held by magnets, so they come off and change colour at will. The outermost ring is a string you can rewrite. Together they make a cat that grows up freely in the galaxy.</p>
+            <dl class="idea-facts">
+              <div class="idea-fact">
+                <dt>本体<span class="idea-fact__en">BODY</span></dt>
+                <dd>悬浮椭球体星球，三色环带随姿态缓缓转动</dd>
+              </div>
+              <div class="idea-fact">
+                <dt>耳朵<span class="idea-fact__en">EARS</span></dt>
+                <dd>勒洛四面体轮廓，磁吸可拆，形态与颜色随心情换</dd>
+              </div>
+              <div class="idea-fact">
+                <dt>星环<span class="idea-fact__en">RING</span></dt>
+                <dd>可编辑的字符串，绕着星球慢慢走一圈</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div class="idea-sub">
+            <h3 class="idea-sub__title">色彩<span class="idea-sub__en">COLOR</span></h3>
+            <p class="idea-p">受蒙德里安《红、黄、蓝的构成》启发，取红、黄、蓝作主题色，参数做过微调。这组色序也正好是海上日出的抽象——天气好的清晨，在唐家湾沙滩就能见到同一套颜色。</p>
+            <p class="idea-p idea-p--en">Inspired by Composition in Red, Blue and Yellow by Piet Mondrian, red, yellow and blue make up the theme colors, with slight adjustments — the same sequence as a sunrise over the sea, the one you can see on Tangjiawan beach on a clear morning.</p>
+            <ul class="idea-colors">
+              <li class="idea-color" style="--c: var(--red)">
+                <i aria-hidden="true"></i>
+                <b>热力红<span>ENTHUSIASM RED</span></b>
+                <p>茫茫大海上初生的朝阳，是软工学子身上的鲜活动力</p>
+              </li>
+              <li class="idea-color" style="--c: var(--yellow)">
+                <i aria-hidden="true"></i>
+                <b>活力黄<span>ENERGY YELLOW</span></b>
+                <p>奔赴热爱、认真过日子的底色</p>
+              </li>
+              <li class="idea-color" style="--c: var(--blue)">
+                <i aria-hidden="true"></i>
+                <b>潜力蓝<span>EXPLORATION BLUE</span></b>
+                <p>面朝大海、春暖花开的未知广域，也是蛟龙潜渊的无限探索</p>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- 03 设计意义 -->
+        <section class="idea-sec">
+          <header class="idea-head">
+            <span class="idea-head__no">03</span>
+            <h2 class="idea-head__title">设计意义<span class="idea-head__en">MEANING</span></h2>
+          </header>
+          <p class="idea-p">猫对世界始终保有好奇：没走过的路先伸爪探一探，跌下来就翻个身接着走，从不因为世界太大而收起兴致。STRCAT 留着这份性情，也是我们对软工人的期待——愿你在代码里和日子里都像这只小猫，乐观、积极、敢试错，面对多彩的世界不退后半步。</p>
+          <p class="idea-p">世界不是一件完工的作品，而是一块随时可以重写的画布。每一位软工人都是自己的 strcat：把新的字符串追加到世界的末尾，多一种写法，世界就多一种可能。</p>
+          <p class="idea-p idea-p--en">Cats keep their curiosity: they test an unknown path with a paw, roll over and walk on after a fall, and never lose interest because the world is too big. STRCAT keeps that temperament, and it carries our wish for every software engineer — stay optimistic, stay willing to try and fail, and never step back from a world this colourful.</p>
+          <p class="idea-p idea-p--en">The world is not a finished work but a canvas that can be rewritten. Everyone here is a strcat of their own: append a new string to the end of the world, and it gains one more possibility.</p>
+        </section>
+
+        <!-- 收束句：不挂在 03 节里，作为整页的落款单独一行，按面板宽度居中 -->
+        <p class="idea-coda">百事从欢，焕新百事<span class="idea-coda__en">Embrace the world to make it embroidered.</span></p>
+      </div>
+      </div>
+      <!-- 收束句的点击彩带层：铺满面板、不吃指针，小 STRCAT 从这里喷出（纸条层与定制面板同一套做法） -->
+      <div class="cf-layer cf-layer--idea" aria-hidden="true"></div>
+      <button class="panel-toggle" type="button" aria-label="放大面板">
+        <svg class="ico-full" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+        <svg class="ico-exit" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
+      </button>
+    </div>
+    <!-- 第二面板「衍生」：文创陈列页。整页纵向可滚 —— 引言 / 票根 / 明信片 / 长幅四段，
+         一屏装不下，滚轮往下才看得完（面板本体不出滚动条，滚动交给 .panel-scroll）。
+         票根那一段自己也是滚轮驱动：整段先占一屏，再留出等于横向行程的滚动高度，
+         滚动进度换算成纸条的横向位移 —— 逐张走到正中并放大。 -->
+    <div class="carousel-panel carousel-panel--deriv">
+      <div class="panel-scroll deriv-scroll" id="derivScroll">
+
+        <!-- 引言：沿用 .panel-join__zh / .panel-join__en-p 的正文样式，只另加小标与三色分节线 -->
+        <section class="deriv-intro">
+          <p class="deriv-kicker">
+            <span class="deriv-kicker__word">衍生</span>
+            <span class="deriv-kicker__en">MERCHANDISE</span>
+          </p>
+          <div class="deriv-bars" aria-hidden="true"><i></i><i></i><i></i></div>
+          <p class="panel-join__zh">STRCAT还为您带来了很多衍生文创作品<br>包括票根、条幅、明信片、鼠标样式等<br>请君过目</p>
+          <p class="panel-join__en-p">To make the design less plain,<br>a series of merchandises,<br>including tickets, banners, postcards, mouse styles and the like,<br>is additionally prepared for exhibition.</p>
+        </section>
+
+        <!-- 01 票根：横向一字排开，滚轮把它左右推，正中一枚放大、两侧递减 -->
+        <section class="deriv-sec">
+          <header class="deriv-head">
+            <div class="deriv-head__row">
+              <span class="deriv-head__no">01</span>
+              <h2 class="deriv-head__title">票根<span class="deriv-head__en">TICKET</span></h2>
+            </div>
+            <p class="deriv-head__desc">六枚票根共用一套纵向栅格：红黄蓝切分条面，白色细线隔开信息段，虚线以下是留存联。滚轮往下，纸条横向走位，正中的一枚放大。</p>
+            <p class="deriv-head__desc deriv-head__desc--en">Six tickets share one vertical grid: red, yellow and blue divide the strip, hairline rules separate the blocks, and the dashed line marks the stub. Scroll down to bring each one to the centre.</p>
+          </header>
+          <!-- 跑马段：高度 = 一屏 + 横向行程（由 JS 量出）。里面的舞台 sticky 在一屏位置，边走边推纸 -->
+          <div class="deriv-run" id="derivTicketRun">
+            <div class="deriv-stage">
+              <div class="deriv-tickets" id="derivTickets">
+                <figure class="deriv-ticket"><img src="icon/merch/ticket_1.png" alt="票根 版式一" loading="lazy" decoding="async" draggable="false"></figure>
+                <figure class="deriv-ticket"><img src="icon/merch/ticket_2.png" alt="票根 版式二" loading="lazy" decoding="async" draggable="false"></figure>
+                <figure class="deriv-ticket"><img src="icon/merch/ticket_3.png" alt="票根 版式三" loading="lazy" decoding="async" draggable="false"></figure>
+                <figure class="deriv-ticket"><img src="icon/merch/ticket_4.png" alt="票根 版式四" loading="lazy" decoding="async" draggable="false"></figure>
+                <figure class="deriv-ticket"><img src="icon/merch/ticket_5.png" alt="票根 版式五" loading="lazy" decoding="async" draggable="false"></figure>
+                <figure class="deriv-ticket"><img src="icon/merch/ticket_6.png" alt="票根 版式六" loading="lazy" decoding="async" draggable="false"></figure>
+              </div>
+              <!-- 进度点：随滚动点亮到当前正中那张 -->
+              <div class="deriv-stage__dots" id="derivTicketDots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              <!-- 张数：居中压在纸条上方 -->
+              <div class="deriv-stage__foot">
+                <span class="deriv-stage__count"><b id="derivTicketIdx">01</b> / 06</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 02 明信片：说明文字在左，无后缀的四张在右排成一行；不跟滚轮走位 -->
+        <section class="deriv-sec">
+          <header class="deriv-head">
+            <div class="deriv-head__row">
+              <span class="deriv-head__no">02</span>
+              <h2 class="deriv-head__title">明信片<span class="deriv-head__en">POSTCARD</span></h2>
+            </div>
+          </header>
+          <div class="deriv-postcards">
+            <div class="deriv-postcards__text">
+              <p class="deriv-text">四张大色块明信片：蓝色球体、黄色勒洛三角、红色切角，配英文标版与中文刊头。横竖比例照原稿保留，不裁齐。</p>
+              <p class="deriv-text deriv-text--en">Four postcards keep the large colour fields of the artwork: a blue sphere, a yellow Reuleaux triangle, a red cut corner, set with the English wordmark and the Chinese masthead. Each keeps its own aspect ratio, uncropped.</p>
+            </div>
+            <div class="deriv-postcards__row">
+              <figure class="deriv-postcard"><img src="icon/merch/postcard_1.png" alt="明信片 一" loading="lazy" decoding="async" draggable="false"></figure>
+              <figure class="deriv-postcard"><img src="icon/merch/postcard_2.png" alt="明信片 二" loading="lazy" decoding="async" draggable="false"></figure>
+              <figure class="deriv-postcard"><img src="icon/merch/postcard_3.png" alt="明信片 三" loading="lazy" decoding="async" draggable="false"></figure>
+              <figure class="deriv-postcard"><img src="icon/merch/postcard_4.png" alt="明信片 四" loading="lazy" decoding="async" draggable="false"></figure>
+            </div>
+          </div>
+        </section>
+
+        <!-- 03 长幅：2:1 横条，占满面板内容宽，向下叠放 -->
+        <section class="deriv-sec">
+          <header class="deriv-head">
+            <div class="deriv-head__row">
+              <span class="deriv-head__no">03</span>
+              <h2 class="deriv-head__title">长幅<span class="deriv-head__en">BANNER</span></h2>
+            </div>
+            <p class="deriv-head__desc">三张长幅统一取 2:1，宽度收在正文栏内，自上而下叠放。黑底噪点、水墨山形、包豪斯网格三种语气，主题句落在右下。</p>
+            <p class="deriv-head__desc deriv-head__desc--en">Three banners keep a 2:1 ratio and sit within the text column, stacked from top to bottom: a grainy black field, an ink landscape and a Bauhaus grid, each with the headline set to the lower right.</p>
+          </header>
+          <div class="deriv-longs">
+            <figure class="deriv-long">
+              <img src="icon/merch/postcard_long_1.png" alt="长幅 至苍穹外" loading="lazy" decoding="async" draggable="false">
+              <figcaption><span class="deriv-long__no">01</span><span class="deriv-long__cap">至苍穹外 尽星河漾</span><span class="deriv-long__en">GO BEYOND</span></figcaption>
+            </figure>
+            <figure class="deriv-long">
+              <img src="icon/merch/postcard_long_2.png" alt="长幅 山中习静" loading="lazy" decoding="async" draggable="false">
+              <figcaption><span class="deriv-long__no">02</span><span class="deriv-long__cap">山中习静观朝槿 松下清斋折露葵</span><span class="deriv-long__en">WANG WEI</span></figcaption>
+            </figure>
+            <figure class="deriv-long">
+              <img src="icon/merch/postcard_long_3.png" alt="长幅 Life is a Journey" loading="lazy" decoding="async" draggable="false">
+              <figcaption><span class="deriv-long__no">03</span><span class="deriv-long__cap">Life is a Journey</span><span class="deriv-long__en">BAUHAUS GRID</span></figcaption>
+            </figure>
+          </div>
+        </section>
+
       </div>
       <button class="panel-toggle" type="button" aria-label="放大面板">
         <svg class="ico-full" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
         <svg class="ico-exit" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
       </button>
     </div>
-    <div class="carousel-panel">
-      <div class="panel-deriv">
-        <p class="panel-join__zh">STRCAT还为您带来了很多衍生文创作品<br>包括票根、条幅、明信片、鼠标样式等<br>请君过目</p>
-        <p class="panel-join__en-p">To make the design less plain,<br>a series of merchandises,<br>including tickets, banners, postcards, mouse styles and the like,<br>is additionally prepared for exhibition.</p>
-      </div>
-      <button class="panel-toggle" type="button" aria-label="放大面板">
-        <svg class="ico-full" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
-        <svg class="ico-exit" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
-      </button></div>
     <div class="carousel-panel"><div class="panel-join">
         <div class="panel-join__main">
-          <div class="panel-join__word">STRCAT</div>
-          <div class="panel-join__cn">
-            <div class="panel-join__cn-line">宇宙</div>
-            <div class="panel-join__cn-line">准备进入</div>
-          </div>
+          <div class="panel-join__word">定制</div>
+          <div class="panel-join__en">Your way in<br>is in your way.</div>
         </div>
-        <div class="panel-join__en">Your way in is in your way.</div>
         <div class="panel-join__body">
           <p class="panel-join__zh">STRCAT立志成为所有人的虚拟伙伴，故不影响整体形象的编辑权将开放给众多用户。这样，你也能创建属于你自己的cat，并有机会加入到多元STRCAT的宇宙中。</p>
           <p class="panel-join__en-p">STRCAT is primarily designed for all individuals as a virtual partner. Thus, part of the editing permission, which affects little of the overall effect, is deliberately opened to most users. This enables you to create your own distinguishing cat and renders you a chance to get involved in the universe of diverse customized STRCATs.</p>
@@ -1102,8 +1278,12 @@
           <div class="lock-disc"></div>
         </div>
         <!-- LOCK-ART · 素材：icon/disc_type1.png —— 用 <img src> 直接引用磁盘文件，改素材刷新即生效，
-             不再需要同步脚本（png 是位图，没有依赖页面字体的 <text>，可以安全外链）-->
-        <img class="lock-art" src="icon/disc_type1.png" alt="" aria-hidden="true" draggable="false">
+             不再需要同步脚本（png 是位图，没有依赖页面字体的 <text>，可以安全外链）。
+             外套 .lock-art-float 专吃播放时的悬浮 / 倾斜 / 呼吸（GSAP 动这一层），
+             img 只负责定位与描边阴影 —— 两套 transform 分在两层，互不覆盖。 -->
+        <div class="lock-art-float">
+          <img class="lock-art" src="icon/disc_type1.png" alt="" aria-hidden="true" draggable="false">
+        </div>
         <!-- 正在播放的曲名：面板顶部水平居中；内容由 renderList() → setLockTitle() 直写 textContent
                      （跟 curTrack 走）。改文案请改 JS 里的常量。 -->
         <span class="lock-player__title" id="lockTitle"></span>
@@ -1236,7 +1416,7 @@
       <span class="carousel-hint carousel-hint--page" aria-hidden="true"><span id="carouselPageNum">壹</span></span>
     </div>
     <div class="bottom-nav bottom-nav--next">
-      <span class="carousel-hint carousel-hint--title" id="carouselTitleHint" aria-hidden="true">元素</span>
+      <span class="carousel-hint carousel-hint--title" id="carouselTitleHint" aria-hidden="true">介绍</span>
       <button class="bottom-nav__btn" type="button" data-nav="next" aria-label="下一面板"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></button>
     </div>
 
@@ -1362,7 +1542,6 @@
 
   <script src="./lib/gsap.min.js"></script>
   <script src="./lib/CustomEase.min.js"></script>
-  <script src="./lib/ScrollTrigger.min.js"></script>
   <!-- AI 接口配置：js/ai-config.js 含密钥，已被 .gitignore 排除；模板见 ai-config.example.js -->
   <script src="./js/ai-config.js"></script>
 
@@ -1469,6 +1648,7 @@
       uniform vec3 uColor;
       uniform vec3 uLight;
       uniform vec3 uCamPos;
+      uniform float uSpec;      // 白色高光强度：主页 0.28；小场景传 0，只留色阶（白点会把纯色冲成脏粉）
       varying vec3 vNormalW;
       varying vec3 vWorldPos;
       void main() {
@@ -1490,7 +1670,7 @@
         /* 卡通硬高光 */
         float ndh = dot(N, H);
         float spec = step(0.62, ndh);
-        col += vec3(1.0) * spec * 0.28;
+        col += vec3(1.0) * spec * uSpec;
 
         /* 轮廓光（赛璐璐边缘提亮） */
         float rim = 1.0 - max(dot(N, V), 0.0);
@@ -1556,14 +1736,18 @@
       }
     `;
 
-    function makeToonMaterial(colorVec) {
+    /* camPos 可传：第二处场景（元素面板左侧的小猫轨道）离主相机很远，
+       共用 camPosU 会让高光与轮廓光按错误视线算，所以那边各传一份自己的相机位置。
+       frag 可传：默认 TOON_FRAG（硬高光 + 硬轮廓光，主页大猫用）；小场景换 EAR_TOON_FRAG 的柔化版本 */
+    function makeToonMaterial(colorVec, camPos, frag) {
       return new THREE.ShaderMaterial({
         vertexShader: TOON_VERT,
-        fragmentShader: TOON_FRAG,
+        fragmentShader: frag || TOON_FRAG,
         uniforms: {
           uColor:  { value: colorVec.clone() },
           uLight:  { value: LIGHT },
-          uCamPos: { value: camPosU },
+          uCamPos: { value: camPos || camPosU },
+          uSpec:   { value: 0.28 },
         },
       });
     }
@@ -1630,35 +1814,45 @@
     const rimGeo = new THREE.RingGeometry((DOME_R - DOME_T) / DOME_R, 1, 96);
     rimGeo.rotateX(-Math.PI / 2);
 
-    function makeDome(colorVec, radius) {
+    /* withOutline 默认 true（主页大猫照旧）；02 节的小猫传 false，去掉壳上的黑描边，只留纯色。
+       frag 可传：默认 TOON_FRAG，小场景换柔化高光的 EAR_TOON_FRAG。
+       hemi / rimG 可传：小场景换低分段几何 —— 那三只猫屏幕上只有一两百像素，
+       沿用大猫的 72×48 分段等于为看不见的细节付出三倍顶点开销 */
+    function makeDome(colorVec, radius, camPos, withOutline = true, frag, hemi, rimG) {
+      const domeGeo = hemi || hemiGeo;
+      const edgeGeo = rimG || rimGeo;
       const g = new THREE.Group();
 
-      const outerMat = makeToonMaterial(colorVec);
-      const outer = new THREE.Mesh(hemiGeo, outerMat);
+      const outerMat = makeToonMaterial(colorVec, camPos, frag);
+      const outer = new THREE.Mesh(domeGeo, outerMat);
       outer.scale.setScalar(radius);
       outer.renderOrder = 1;
       g.add(outer);
 
-      const innerMat = makeToonMaterial(colorVec);
+      const innerMat = makeToonMaterial(colorVec, camPos, frag);
       innerMat.side = THREE.BackSide;
-      const inner = new THREE.Mesh(hemiGeo, innerMat);
+      const inner = new THREE.Mesh(domeGeo, innerMat);
       inner.scale.setScalar(radius - DOME_T);
       inner.renderOrder = 1;
       g.add(inner);
 
-      const rimMat = makeToonMaterial(colorVec);
+      const rimMat = makeToonMaterial(colorVec, camPos, frag);
       rimMat.side = THREE.DoubleSide;
-      const rim = new THREE.Mesh(rimGeo, rimMat);
+      const rim = new THREE.Mesh(edgeGeo, rimMat);
       rim.scale.setScalar(radius);
       rim.renderOrder = 1;
       g.add(rim);
 
-      const outline = new THREE.Mesh(hemiGeo, outlineBlackMat);
-      outline.scale.setScalar(radius);
-      outline.renderOrder = 2;
-      g.add(outline);
+      const meshes = [outer, inner, rim];
+      if (withOutline) {                 // 不给描边就别占一个 draw call 与一份网格实例
+        const outline = new THREE.Mesh(domeGeo, outlineBlackMat);
+        outline.scale.setScalar(radius);
+        outline.renderOrder = 2;
+        g.add(outline);
+        meshes.push(outline);
+      }
 
-      return { group: g, mats: [outerMat, innerMat, rimMat], meshes: [outer, inner, rim, outline] };
+      return { group: g, mats: [outerMat, innerMat, rimMat], meshes };
     }
 
     /* ---------- 内容物形状：整圆环（默认隐藏，切换时替代半球壳） ---------- */
@@ -2169,7 +2363,8 @@
     const EAR_FADE = 0.5;        // 颜色切换过渡时长（秒）
 
     /* 勒洛四面体 = 以正四面体 4 顶点为球心、边长为半径的 4 球交集。沿中心射线求边界半径：min_i ( d·c_i + sqrt((d·c_i)² + R²-1) ) */
-    function buildReuleauxTetrahedron() {
+    /* segW / segH 可降：小猫轨道用的是缩到几十像素的同一只耳朵，128×96 的分段在那里纯属浪费 */
+    function buildReuleauxTetrahedron(segW, segH) {
       const s2  = Math.sqrt(2 / 3);
       const s29 = Math.sqrt(2 / 9);
       const s89 = Math.sqrt(8 / 9);
@@ -2184,7 +2379,7 @@
       const ROUND = 0.05;             // 棱的几何圆角量（模型单位，越大越圆润）
       const BETA = 18;                // 法线软过渡系数（越大棱越锐，越小越圆润）
 
-      const geo = new THREE.SphereGeometry(1, 128, 96);
+      const geo = new THREE.SphereGeometry(1, segW || 128, segH || 96);
       const pos = geo.attributes.position;
       const normal = geo.attributes.normal;
       const dir = new THREE.Vector3();
@@ -2868,6 +3063,16 @@
     }
 
     /* ---------- 渲染循环 ---------- */
+    /* 面板呼出后主场景只剩一片静止背景（吉祥物被抬到视口外、相机不自动旋转），
+       这种情况整帧跳过绘制：面板打开是主要停留状态，省下的是每帧一整个场景的光栅化。
+       复位/改尺寸时把 forceSceneRender 置真补一帧，免得暂停期间被拉伸的画面留在屏幕上 */
+    const sceneCarouselEl = document.querySelector('.carousel');
+    let forceSceneRender = true;
+    /* 开场遮罩不透明期间不绘制：遮罩盖着，画了看不见，只是让 GPU 整段视频都满载、机器降频，
+       等真正进入时反而更卡。warmLeft 先画两帧，把着色器编译与纹理上传放在遮罩后面做完 */
+    let scenePaused = true;
+    let warmLeft = 2;
+
     function animate() {
       requestAnimationFrame(animate);
       camPosU.copy(camera.position);
@@ -2949,10 +3154,27 @@
       controls.update();
       updateFace(dt);   // 表情：面向镜头（需在 controls.update 后取当帧相机位）+ 缓出插值 + 眨眼/漂移活性
 
+      /* 开场遮罩还盖着：状态照常推进（上面的更新都做完了），只是不提交绘制。
+         悬停射线也一并跳过 —— 遮罩下看不见，射线白算 */
+      if (scenePaused) {
+        if (warmLeft > 0) { warmLeft--; renderer.render(scene, camera); }
+        return;
+      }
+
       /* 悬停射线抽帧执行（见 HOVER_TICK 注释）：纯视觉判定，无需逐帧 */
       if (++hoverTick >= HOVER_TICK) { hoverTick = 0; updateHover(); }
 
-      renderer.render(scene, camera);
+      /* 面板呼出且吉祥物已抬出视口时，主场景只剩一张静止背景（背景 shader 没有时间项、只有相机在绕圈），
+         整帧跳过绘制。以前这里还给自动绕圈留了 1/4 帧率，但那 15 帧/秒的「背景在动」代价很高：
+         四张 80vw×80vh 面板的毛玻璃要靠它逐帧重算 backdrop，面板一滚动或切换就整片重绘。
+         停掉之后背景纹理不再变，毛玻璃结果可以直接复用，露在两侧的那条静止背景也看不出差别。 */
+      const covered = sceneCarouselEl && sceneCarouselEl.classList.contains('is-open') &&
+                      mascot.position.y > 3.5;
+      /* forceSceneRender：暂停期间被改过的画面（resize / 收面板）补画一帧 */
+      if (!covered || forceSceneRender) {
+        forceSceneRender = false;
+        renderer.render(scene, camera);
+      }
     }
     animate();
 
@@ -2998,6 +3220,7 @@
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
+      forceSceneRender = true;      // 暂停态（面板呼出）下也要把新尺寸画一帧
     });
 
     /* ---------- 顶栏右端菜单：点击展开 / 收回 ---------- */
@@ -3053,7 +3276,7 @@
     const pageNum   = document.getElementById('carouselPageNum');    // 页数中会变的汉字（壹/貳/叁/肆）
     const titleHint = document.getElementById('carouselTitleHint');  // 右侧内容名提示
     const PAGE_LABELS = ['壹', '貳', '叁', '肆'];                    // 四个面板对应的页数汉字
-    const HINT_TITLES = ['元素', '衍生', '定制', '锁屏'];            // 四个面板对应的内容名
+    const HINT_TITLES = ['介绍', '衍生', '定制', '锁屏'];            // 四个面板对应的内容名
     const PANEL_COUNT = panels.length;      // 4
     const SIDE_SCALE   = 0.65;               // 左右面板缩放
     const SIDE_OFFSET  = 640;               // 左右面板中心向两侧偏移(px)
@@ -3155,6 +3378,9 @@
 
     /* 呼出：中间先进入，左右错峰后进入（慢回弹：到位后轻微 overshoot） */
     function openCarousel() {
+      /* 有人把轮播叫回来 = 取消还在排期的定制浮层（从定制面板点「定制」后要等收起动画走完才弹浮层，
+         这期间点别的面板，那条 delayedCall 会和面板撞在一起，两边同时挂在屏幕上） */
+      if (customizeEnterCall) { customizeEnterCall.kill(); customizeEnterCall = null; }
       lockPanelHover(OPEN_DUR + SIDE_STAGGER + 0.15);   // 面板进入到位前不响应 hover
       gsap.killTweensOf(panels);
       gsap.killTweensOf(navGroups);                     // 取消未到期的延迟淡入，防止重复触发堆叠
@@ -3259,7 +3485,8 @@
     function showPanel(idx) {
       if (customizeOpen) {
         closeCustomize();
-        gsap.delayedCall(CUSTOMIZE_BACK_DELAY, () => { if (!carouselOpen) showPanel(idx); });
+        /* 浮层滑出期间可能又被叫回来（点 ✕ 再点「定制」）—— 两个条件都过才跳，免得浮层与面板一起挂在屏幕上 */
+        gsap.delayedCall(CUSTOMIZE_BACK_DELAY, () => { if (!carouselOpen && !customizeOpen) showPanel(idx); });
         return;
       }
       if (!carouselOpen) {
@@ -3609,6 +3836,595 @@
     gsap.set(panels, { visibility: 'hidden' });
     updateHints();   // 初始同步提示文字（页数/内容名），此时 opacity 0 隐藏
 
+    /* ===== 第二「衍生」面板：票根横向陈列 =====
+           — 六枚票根横向一字排开，滚轮上下滑 → 纸条左右走位，正中一枚放大、两侧递减
+           — 舞台 sticky 在滚动容器顶端，占一屏；本段高度 = 一屏 + 等长的横向行程
+           为什么不用 ScrollTrigger：滚动发生在本面板内层的 .deriv-scroll 上，而面板本体带 3D 变换，
+           ScrollTrigger 靠 rect 量位置，遇上「内层滚动容器 + 变换中的面板」算出的 start/end 会漂。
+           这里改读 scrollTop 与 offsetTop（布局坐标，与 transform 无关），再用 GSAP 写 transform。 */
+    const derivScroll = document.getElementById('derivScroll');
+    if (derivScroll) {
+      const derivRun  = document.getElementById('derivTicketRun');
+      const derivStage = derivRun.querySelector('.deriv-stage');
+      const derivTrack = document.getElementById('derivTickets');
+      const derivCards = Array.prototype.slice.call(derivTrack.children);
+      const derivDots  = Array.prototype.slice.call(document.querySelectorAll('#derivTicketDots i'));
+      const derivIdxEl = document.getElementById('derivTicketIdx');
+      const DERIV_LAST = derivCards.length - 1;   // 末张的下标 = 进度 1
+      const DERIV_GAP  = 0.22;                     // 相邻纸条留白 = 纸宽 × 它
+      let derivStep = 0, derivTravel = 0, derivTop = 0;
+      let derivTarget = 0, derivShown = 0, derivNear = -1;
+
+      gsap.set(derivTrack, { xPercent: -50, yPercent: -50 });   // 纸条组居中：位移只由 x 承担
+
+      /* 量尺寸：舞台高 = 滚动容器可见高（面板展开/收起会变，故挂 ResizeObserver）；
+         纸宽由高 × 原稿比例得到，图片没加载完也准。 */
+      function measureDerivTickets() {
+        const stageH = Math.round(derivScroll.clientHeight);
+        if (!stageH) return;
+        derivStage.style.setProperty('--deriv-stage-h', stageH + 'px');
+        const cardW = derivCards[0].offsetWidth || stageH * 0.7 * (600 / 1486);
+        derivStep = cardW * (1 + DERIV_GAP);
+        derivTravel = Math.max(1, DERIV_LAST * derivStep);
+        derivStage.style.setProperty('--deriv-ticket-w', cardW + 'px');
+        derivStage.style.setProperty('--deriv-step', derivStep + 'px');
+        derivRun.style.height = (stageH + derivTravel) + 'px';   // 一屏 + 行程
+        derivTop = derivRun.offsetTop;                            // 相对 .deriv-scroll（它是 relative）
+        readDerivProgress();
+        applyDerivTickets(derivTarget);   // 尺寸变了立刻重画一帧，别等下一次滚动
+        derivShown = derivTarget;
+      }
+
+      function readDerivProgress() {
+        const raw = (derivScroll.scrollTop - derivTop) / derivTravel;
+        derivTarget = raw < 0 ? 0 : raw > 1 ? 1 : raw;
+      }
+
+      /* 进度 → 位移与逐张缩放：c 为「正中那张」的小数下标 */
+      function applyDerivTickets(p) {
+        const c = p * DERIV_LAST;
+        gsap.set(derivTrack, { x: -(c - DERIV_LAST / 2) * derivStep });
+        for (let i = 0; i <= DERIV_LAST; i++) {
+          const k = Math.min(Math.abs(i - c), 2.5);
+          gsap.set(derivCards[i], { scale: 1 - k * 0.1, opacity: 1 - k * 0.26 });
+        }
+        const near = Math.round(c);
+        if (near !== derivNear) {
+          derivNear = near;
+          const label = String(near + 1).padStart(2, '0');
+          derivIdxEl.textContent = label;
+          derivDots.forEach((d, i) => d.classList.toggle('is-on', i === near));
+        }
+      }
+
+      derivScroll.addEventListener('scroll', readDerivProgress, { passive: true });
+
+      /* 阻尼跟随：目标进度按帧插值，滚轮的阶梯感被抹平（用 ticker 的 deltaTime，刷新率无关） */
+      gsap.ticker.add((time, deltaTime) => {
+        if (Math.abs(derivTarget - derivShown) < 0.0002) return;
+        derivShown += (derivTarget - derivShown) * Math.min(1, deltaTime * 0.014);
+        applyDerivTickets(derivShown);
+      });
+
+      measureDerivTickets();
+      if (window.ResizeObserver) new ResizeObserver(measureDerivTickets).observe(derivScroll);
+      window.addEventListener('resize', measureDerivTickets);
+      window.addEventListener('load', measureDerivTickets);   // 字体 / 图片落位后高度会变，再量一次
+    }
+
+    /* ===== 衍生面板引言：三色带红段对齐标题行右端 =====
+           红段宽度 = 「面板左沿 → 标题行右端」。两个量都取布局值：.deriv-bars 因负外边距
+           从面板左沿起，.deriv-kicker 的 offsetWidth 又是它收缩后的内容宽（含两段文字的间距），
+           相减即得，与面板的 3D 变换无关。字体落位、面板宽度变化都要重量，
+           否则 Barlow 换掉后 MERCHANDISE 的宽度一变，红段就短了一截。 */
+    const derivBars = document.querySelector('.deriv-bars');
+    if (derivBars) {
+      const derivKicker = derivBars.parentElement.querySelector('.deriv-kicker');
+      const syncBarsRed = () => {
+        const redW = (derivKicker.offsetLeft + derivKicker.offsetWidth) - derivBars.offsetLeft;
+        derivBars.style.setProperty('--red-w', Math.max(0, Math.round(redW)) + 'px');
+      };
+      syncBarsRed();
+      window.addEventListener('resize', syncBarsRed);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(syncBarsRed);
+      if (window.ResizeObserver) new ResizeObserver(syncBarsRed).observe(derivKicker);
+    }
+
+    /* ===== 元素面板收束句：点击喷出三色小 STRCAT =====
+           与定制面板按钮那套彩带同源（整圈铺开、x / y 不同缓动带出弧度、边转边缩小消失），
+           只把「纸条」换成一枚带耳朵、无表情、白描边的小猫剪影：一个闭合路径，笔画压在外沿
+           （paint-order: stroke），填色用 currentColor，所以三色只要换 color 就行。 */
+    /* 猫头剪影：圆脸 + 两只小圆耳（耳朵由直线尖角改成 C 曲线包出的圆顶，
+       宽度 7 → 5、高度 10 → 7.7，在 14–22px 的成品尺寸下不再抢脸） */
+    const CAT_PATH = 'M9 14C8.1 11 8.9 6.6 10.9 6.3C12.8 6 13.5 8.7 14.1 10.8Q20 8.8 25.9 10.8C26.5 8.7 27.2 6 29.1 6.3C31.1 6.6 31.9 11 31 14A12 12 0 1 1 9 14Z';
+    const CAT_COLORS = ['var(--red)', 'var(--yellow)', 'var(--blue)'];
+    const CAT_COUNT = 14;        // 每次喷出的枚数
+    const CAT_DIST = 56;         // 喷射距离基准（px）
+    const CAT_DIST_VAR = 44;     // 距离随机增量（px）
+    const CAT_GRAVITY = 22;      // 下落补偿（px）
+    const CAT_DUR = 0.75;        // 单枚寿命（秒）
+    const CAT_SPIN = 220;        // 自旋幅度（度）
+
+    const ideaCoda = document.querySelector('.idea-coda');
+
+    /* px / py = 点击点的屏幕坐标：小猫就从按下的那一处钻出来，而不是每次都从整行文字的中心 */
+    function spawnCatBurst(px, py) {
+      const panel = ideaCoda && ideaCoda.closest('.carousel-panel');
+      const layer = panel && panel.querySelector('.cf-layer--idea');
+      if (!layer) return;
+      /* 落点 = 点击点相对彩带层的像素值。层是面板子级、随面板一起变换，
+         用两个 rect 相减即可，不必反解面板的 scale / rotate */
+      const lr = layer.getBoundingClientRect();
+      const cx = px - lr.left;
+      const cy = py - lr.top;
+
+      for (let i = 0; i < CAT_COUNT; i++) {
+        const el = document.createElement('i');
+        el.className = 'cf-cat';
+        const size = 14 + Math.random() * 8;          // 14–22px：比纸条大，才看得出是只猫
+        el.style.width = size.toFixed(1) + 'px';
+        el.style.height = size.toFixed(1) + 'px';
+        el.style.color = CAT_COLORS[i % CAT_COLORS.length];
+        el.innerHTML = '<svg viewBox="0 0 40 40" aria-hidden="true"><path d="' + CAT_PATH +
+          '" fill="currentColor" stroke="#fff" stroke-width="2" stroke-linejoin="round" paint-order="stroke"/></svg>';
+        layer.appendChild(el);
+
+        const ang = (i / CAT_COUNT) * Math.PI * 2 + Math.random() * 0.45;   // 整圈铺开 + 抖动
+        const dist = CAT_DIST + Math.random() * CAT_DIST_VAR;
+        const dx = Math.cos(ang) * dist;
+        const dy = Math.sin(ang) * dist + CAT_GRAVITY;
+        const spin = (Math.random() < 0.5 ? -1 : 1) * (CAT_SPIN * 0.5 + Math.random() * CAT_SPIN);
+
+        gsap.set(el, { x: cx, y: cy, xPercent: -50, yPercent: -50, rotation: Math.random() * 180, scale: 1 });
+        gsap.timeline({ onComplete: () => el.remove() })
+          .to(el, { x: cx + dx, duration: CAT_DUR, ease: 'power2.out' }, 0)
+          .to(el, { y: cy + dy, duration: CAT_DUR, ease: 'power1.out' }, 0)
+          .to(el, { rotation: spin, duration: CAT_DUR, ease: 'power1.out' }, 0)
+          .to(el, { scale: 0, duration: CAT_DUR, ease: 'power1.in' }, 0)
+          .to(el, { opacity: 0, duration: CAT_DUR * 0.45, ease: 'power1.in' }, CAT_DUR * 0.55);
+      }
+    }
+
+    if (ideaCoda) {
+      ideaCoda.addEventListener('click', (e) => {
+        const panel = ideaCoda.closest('.carousel-panel');
+        if (!panel || !panel.classList.contains('is-active')) return;   // 侧位 / 移动中不喷
+        spawnCatBurst(e.clientX, e.clientY);                            // 以点击处为起点
+      });
+    }
+
+    /* ===== 收束句：复用歌单行的磁吸（弹性放大 + 立体倾斜） =====
+           与歌单行 rowMagnet 同一套手感，只换了对象：指针进入 → 建透视 + elastic.out 放大到 CODA_SCALE；
+           指针在文字框内的归一化位置（-1 ~ 1）决定绕 Y / X 的倾角 —— 靠近哪一侧，哪一侧就朝观察者翘起。
+           离开 → 弹性归位。
+           · 基准矩形在进入时量一次并缓存（codaBox）：倾角会让实时 rect 变形，否则会「跟着走 → 倾角变小 → 回弹」；
+           · 面板不是主位 / 正在移动（no-interact）时摆脱吸附，且不再起新补间（与锁屏卡面同判法）。 */
+    const codaPanel = ideaCoda ? ideaCoda.closest('.carousel-panel') : null;
+    const CODA_SCALE = 1.01;     // 放大倍率 —— 与歌单行同值
+    const CODA_PERSP = 1000;     // 透视距离（px，越小纵深越强）—— 同上
+    const CODA_TILT  = 8;        // 倾斜峰值（deg）—— 同上
+    let codaBox = null;
+    let codaEngaged = false;
+
+    function codaMagnetRelease() {
+      if (!codaEngaged) return;
+      codaEngaged = false;
+      gsap.to(ideaCoda, {
+        rotationX: 0, rotationY: 0, scale: 1,
+        duration: 0.7, ease: 'elastic.out(1, 0.4)', overwrite: 'auto',
+      });
+    }
+
+    if (ideaCoda) {
+      ideaCoda.addEventListener('pointerenter', () => {
+        if (!codaPanel || !codaPanel.classList.contains('is-active') ||
+            carouselRoot.classList.contains('no-interact')) return;
+        codaBox = ideaCoda.getBoundingClientRect();   // 先量静止矩形，再起放大补间
+        codaEngaged = true;
+        gsap.set(ideaCoda, { transformPerspective: CODA_PERSP });   // 立即建透视：无旋转时不显形，随后的倾斜才有纵深
+        gsap.to(ideaCoda, { scale: CODA_SCALE, duration: 0.6, ease: 'elastic.out(1, 0.5)', overwrite: 'auto' });
+      });
+
+      ideaCoda.addEventListener('pointermove', (e) => {
+        if (!codaPanel || !codaPanel.classList.contains('is-active') ||
+            carouselRoot.classList.contains('no-interact')) {
+          codaMagnetRelease();
+          return;
+        }
+        if (!codaEngaged || !codaBox || !codaBox.width) return;
+        const nx = gsap.utils.clamp(-1, 1, (e.clientX - (codaBox.left + codaBox.width  / 2)) / (codaBox.width  / 2));
+        const ny = gsap.utils.clamp(-1, 1, (e.clientY - (codaBox.top  + codaBox.height / 2)) / (codaBox.height / 2));
+        gsap.to(ideaCoda, {
+          rotationY: -nx * CODA_TILT, rotationX: ny * CODA_TILT,
+          duration: 0.45, ease: 'power3.out', overwrite: 'auto',
+        });
+      });
+
+      ideaCoda.addEventListener('pointerleave', codaMagnetRelease);
+
+      /* 面板转去侧位时指针未必先离开（元素被 pointer-events: none 摘掉命中，不保证补发 pointerleave），
+         盯一眼主位标记：一旦不是主面板就归位，避免文字带着上一次的倾角被搬到侧边 */
+      if (codaPanel && window.MutationObserver) {
+        new MutationObserver(() => {
+          if (!codaPanel.classList.contains('is-active')) codaMagnetRelease();
+        }).observe(codaPanel, { attributes: true, attributeFilter: ['class'] });
+      }
+    }
+
+    /* ===== 02 节左侧：三只纯色小 STRCAT 的圆形轨道 =====
+           轨道是屏幕平面上的正圆 —— 正交相机正视，公转只改 x / y，不做任何倾斜；
+           立体的是猫本身，自转是三个轴上的自由翻滚。
+           猫直接用主页那只默认大猫的模型：玻璃球容器 + 三片半球壳 + 两只勒洛四面体耳朵，
+           只把三片壳与耳朵换成同一种主题色（红 / 黄 / 蓝各一只），并去掉表情与外围字符环。
+           几何与着色都是同一份（containerGeo / hemiGeo / makeDome / EAR_TOON_FRAG），
+           差别只有 uCamPos：小猫离主相机很远，必须各带一份小场景的相机位置（见 makeToonMaterial 的 camPos）。 */
+    const orbitHost = document.querySelector('.idea-orbit');
+    if (orbitHost) {
+      const orbitSection = orbitHost.closest('.idea-sec');
+      const orbitPanel   = orbitHost.closest('.carousel-panel');
+      const orbitCanvas  = orbitHost.querySelector('canvas');
+
+      const orbitRenderer = new THREE.WebGLRenderer({ canvas: orbitCanvas, alpha: true, antialias: true });
+      orbitRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      orbitRenderer.outputColorSpace = THREE.SRGBColorSpace;
+      orbitRenderer.toneMapping = THREE.NoToneMapping;
+      orbitRenderer.setClearColor(0x000000, 0);           // 透明底：只留猫，面板自己的毛玻璃透出来
+
+      const orbitScene  = new THREE.Scene();
+      /* 世界单位 = CSS 像素，猫的包围球半径约 44 × 1.8 ≈ 80px，所以相机必须站得远、近平面必须比它大：
+         以前相机贴着 z = 20、近平面 0.1，模型前半颗球整个落在近平面之前，被整齐削掉，露出里面的
+         白玻璃壳与黑描边内壁 —— 看着就是「模型被切开、白一块黑一块」 */
+      const orbitCamera = new THREE.OrthographicCamera(0, 1, 1, -1, 50, 800);
+      orbitCamera.position.set(0, 0, 400);
+
+      /* 顺序按屏幕上的顺时针排：公转角度是逆时针增长（a 增大 → 由右往上），
+         所以数组下标顺着排，看上去是「红 → 黄 → 蓝」；写反了就是红蓝黄 */
+      const ORBIT_TINTS = [RED, BLUE, YELLOW];
+      const ORBIT_Z     = new THREE.Vector3(0, 0, 1);
+      const ORBIT_UP    = new THREE.Vector3(0, 1, 0);
+      /* 三片壳的朝向照抄大猫的初始分布（互相错开、覆盖整颗球） */
+      const ORBIT_DOME_DIRS = [
+        new THREE.Vector3( 0.35, 0.55,  0.75).normalize(),
+        new THREE.Vector3( 0.85, 0.40, -0.35).normalize(),
+        new THREE.Vector3(-0.80, 0.45, -0.38).normalize(),
+      ];
+
+      /* 几何按屏幕尺寸配：单只猫屏幕直径约 170px，48×32 的球面一段只有 5px 弧长，
+         再细分只是把顶点喂给 GPU 看不见的地方；耳朵同理（屏幕上约 40px 宽） */
+      const orbitEarGeo  = buildReuleauxTetrahedron(36, 26);
+      const orbitHemiGeo = new THREE.SphereGeometry(1, 48, 32, 0, Math.PI * 2, 0, Math.PI / 2);
+      const orbitRimGeo  = new THREE.RingGeometry((DOME_R - DOME_T) / DOME_R, 1, 48);
+      orbitRimGeo.rotateX(-Math.PI / 2);
+      /* 实心芯的球：半径压在最里面那片壳（0.97）的内壁之内，只当填充用，不参与描边；
+         它只从壳的开口处露出一小块纯色，纵向可以再省一档 */
+      const ORBIT_CORE_R = 0.955;
+      const orbitCoreGeo = new THREE.SphereGeometry(1, 32, 20);
+
+      const orbitCats = [];
+
+      /* 着色用的「视线」相机与真实相机分开：只影响高光与轮廓光的夹角，不参与投影。
+         距离取猫身半径的 5 倍 —— 与主页大猫（球半径 1、相机 z 5）同一个比例，高光形状才对得上。
+         以前这里是固定的 z = 20，猫一放大到 40 多，视线起点就落进球体内部，
+         dot(N, V) 在整个正面都变成负数，轮廓光的 step 恒为 1，正片全被提亮成灰白 */
+      const ORBIT_CAM_RATIO = 5;
+
+      function buildOrbitCat(tint) {
+        const camU = new THREE.Vector3(0, 0, ORBIT_CAM_RATIO * 26);
+        const g = new THREE.Group();
+
+        /* 每只猫一根自己的翻滚轴（随机方向，不偏向任何一根坐标轴），
+           轴本身再绕另一根随机轴缓慢进动 —— 姿态走的是球面上的一整片，而不是一圈 */
+        const rand = () => Math.random() * 2 - 1;
+        const axis = new THREE.Vector3(rand(), rand(), rand());
+        if (axis.lengthSq() < 1e-4) axis.set(0, 1, 0);
+        axis.normalize();
+        const precess = new THREE.Vector3(rand(), rand(), rand());
+        if (precess.lengthSq() < 1e-4) precess.set(1, 0, 0);
+        precess.normalize();
+        /* 起始姿态也随机：三只一上来就不是同一个角度，转起来更不像同步的机械件 */
+        g.quaternion.setFromEuler(new THREE.Euler(rand() * Math.PI, rand() * Math.PI, rand() * Math.PI));
+
+        /* 本体只有“壳”：三片半球壳 + 一颗实心芯，不再套玻璃容器。
+           那层透明球壳的高光是按「视线」算的，本场景里的视线起点一旦进到球内，
+           整颗球都会盖上一层 40% 的冷灰（alpha 0.4 的 0.65/0.70/0.78），红色被冲成脏粉色；
+           这里要的就是纯色，直接去掉 */
+
+        /* 实心芯：三片半球壳是开口的（半球只有一半），自由翻滚把开口转到镜头前时会直接看进球里，
+           内壁与口沿虽然同色，但光照方向相反，还是会露出「被切开」的分界。垫一颗不透明的同色球堵住，
+           开口处看到的仍是同一颗球 */
+        /* 实心芯 + 壳都关掉白色高光（uSpec = 0）：这个尺度下高光是一整片盖住正面的白，
+           会把纯红 / 纯蓝冲成脏粉、脏蓝；只留色阶与同色的轮廓光 */
+        const coreMat = makeToonMaterial(tint, camU);
+        coreMat.uniforms.uSpec.value = 0;
+        const core = new THREE.Mesh(orbitCoreGeo, coreMat);
+        core.scale.setScalar(ORBIT_CORE_R);
+        g.add(core);
+
+        /* 三片半球壳：大猫的默认形态，颜色统一成这一只的主题色 → 整只看起来是一颗纯色球；
+           第四个参数 false = 不挂黑描边，壳与壳之间只靠色阶差分开 */
+        ORBIT_DOME_DIRS.forEach((dir, i) => {
+          const dome = makeDome(tint, DOME_R - i * 0.01, camU, false, undefined, orbitHemiGeo, orbitRimGeo);
+          dome.mats.forEach((m) => { m.uniforms.uSpec.value = 0; });
+          dome.group.quaternion.setFromUnitVectors(ORBIT_UP, dir);
+          g.add(dome.group);
+        });
+
+        /* 两只耳朵：位置 / 缩放同大猫，填色用本只的主题色；黑白两道描边都不要 */
+        const earFillMat = new THREE.ShaderMaterial({
+          vertexShader: TOON_VERT, fragmentShader: EAR_TOON_FRAG,
+          uniforms: { uColor: { value: tint.clone() }, uLight: { value: LIGHT }, uCamPos: { value: camU } },
+        });
+        [-1, 1].forEach((side) => {
+          const dir = new THREE.Vector3(side * Math.sin(EAR_ANGLE), Math.cos(EAR_ANGLE), 0);
+          const fill = new THREE.Mesh(orbitEarGeo, earFillMat);
+          fill.renderOrder = 1;
+          fill.scale.setScalar(EAR_SCALE);
+          fill.position.copy(dir).multiplyScalar(EAR_RING_R);
+          fill.quaternion.setFromUnitVectors(ORBIT_Z, dir);
+          g.add(fill);
+        });
+
+        orbitScene.add(g);
+        orbitCats.push({ group: g, camU, axis, precess, hovered: false });
+      }
+      ORBIT_TINTS.forEach(buildOrbitCat);
+
+      /* 布局：半径吃满 02 左侧的空白（不越过节标题的起笔线），画布高度按圆径 + 猫身余量 */
+      let orbitRadius = 0;      // 猫心所在圆周半径
+      let orbitCatScale = 26;
+      let orbitW = 1, orbitH = 1;   // 当前画布尺寸（世界 1 单位 = 1px），命中判定要按它换算
+
+      /* 悬停：与主页大猫同一套 —— 弹性放大，进出各一条曲线；射线换成屏幕距离 */
+      const ORBIT_HOVER     = 1.1;
+      const ORBIT_HOVER_IN  = { duration: 1.5,  ease: 'elastic.out(1, 0.4)', overwrite: true };
+      const ORBIT_HOVER_OUT = { duration: 1.25, ease: 'elastic.out(1, 0.3)', overwrite: true };
+      let orbitPX = -9e4, orbitPY = -9e4;   // 指针 client 坐标，-9e4 表示已移出
+      window.addEventListener('pointermove', (e) => { orbitPX = e.clientX; orbitPY = e.clientY; }, { passive: true });
+      /* 指针移出窗口时不会再收到 pointermove，停在边缘的旧坐标会让猫一直保持放大 —— 兜底清掉 */
+      window.addEventListener('pointerout', (e) => {
+        if (!e.relatedTarget) { orbitPX = -9e4; orbitPY = -9e4; }
+      }, { passive: true });
+      document.addEventListener('pointerleave', () => { orbitPX = -9e4; orbitPY = -9e4; });
+
+      function layoutOrbit() {
+        const x     = orbitSection.offsetLeft;        // 面板左内沿 → 02 左沿
+        const secH  = orbitSection.offsetHeight;
+        const avail = x - 20;                         // 留 20px：圆不压到分节标题与序号
+        const R     = Math.min(avail, 400, secH * 0.46);
+        if (R < 130) {                                // 窄屏没有左侧空白可放，直接收起
+          orbitHost.style.display = 'none';
+          orbitRadius = 0;
+          return;
+        }
+        orbitHost.style.display = '';
+        /* 猫身放大：上限 44 → 68 → 84（屏幕直径约 140 → 168px，含耳朵约 235px）；
+           圆半径同时收一点（orbitRadius 里减去 1.5 倍缩放），三只按 120° 排开仍不互相压住 */
+        orbitCatScale = gsap.utils.clamp(30, 84, R * 0.225);
+        orbitRadius = R - orbitCatScale * 1.5;        // 猫心半径：让最外侧的耳朵也不越过 R
+        /* 画布只铺需要的那块：横向从圆心到最右侧的耳朵，纵向按圆径 + 猫身余量。
+           猫心的屏幕位置由世界坐标换算，画布收窄不影响构图，但能省掉三成多的像素填充 */
+        const padW = orbitCatScale * 0.55;            // 横向：圆心 → 最右侧耳朵（含 hover 放大）
+        const padV = orbitCatScale * 2.0;             // 纵向：上下对称留白（含 hover 放大）
+        const W = R + padW;
+        const H = 2 * (orbitRadius + padV);
+        orbitW = W;
+        orbitH = H;
+
+        /* 圆心纵向：对齐「色彩」那一行小标题的中线（不是整节的 34% 处），找不到就退回按节高估算 */
+        const colorHead = orbitSection.querySelectorAll('.idea-sub__title')[1];
+        const cy = colorHead
+          ? colorHead.offsetTop + colorHead.offsetHeight / 2
+          : secH * 0.34;
+        orbitHost.style.setProperty('--orbit-x', (-x) + 'px');                  // 画布左缘贴面板左边框
+        orbitHost.style.setProperty('--orbit-y', (cy - H / 2) + 'px');
+        orbitHost.style.setProperty('--orbit-w', W + 'px');
+        orbitHost.style.setProperty('--orbit-h', H + 'px');
+
+        orbitCamera.left   = 0;
+        orbitCamera.right  = W;
+        orbitCamera.top    = H / 2;
+        orbitCamera.bottom = -H / 2;
+        orbitCamera.updateProjectionMatrix();
+        orbitRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        orbitRenderer.setSize(W, H, false);           // false：CSS 尺寸交给上面的变量，别被 canvas 行内样式顶掉
+        /* 缩放基准变了：进行中的 hover tween 还按旧基准写值，先掐掉再落到新基准（悬停中的保持放大态） */
+        orbitCats.forEach((c) => {
+          gsap.killTweensOf(c.group.scale);
+          c.group.scale.setScalar(orbitCatScale * (c.hovered ? ORBIT_HOVER : 1));
+        });
+      }
+
+      /* 动画：公转在屏幕平面上走圆，自转是真正的立体翻滚 —— 绕自己的轴转到任意角度，
+         轴本身再进动，于是三只猫的朝向扫过整片球面，不会只重复同一圈.
+         只在本面板主位且轮播展开时跑，收起 / 侧位 / 页面隐藏就停 */
+      const orbitClock = new THREE.Clock();
+      const ORBIT_SPEED   = 0.17;    // 公转（rad/s）→ 约 37s 一圈
+      const SPIN_SPEED    = 0.55;    // 翻滚（rad/s）
+      const PRECESS_SPEED = 0.19;    // 翻滚轴的进动（rad/s）
+      const spinQ = new THREE.Quaternion();
+      let orbitRAF = 0;
+      /* 悬停命中每 3 帧算一次：判定要读 host 的 getBoundingClientRect，而它每帧都在被 GSAP 改 transform，
+         逐帧读就是逐帧强制重排。猫走得很慢（0.17 rad/s），20Hz 采样对手感没有区别 */
+      let orbitHoverTick = 3;
+      let orbitT = 0;
+
+      /* 唯一判据：元素面板在主位（.is-active）+ 轮播展开 + 画布在视口里 + 页面可见。
+         orbitSync 用它起停，orbitFrame 每帧再自检一次 —— 后者是兜底：
+         以后新增切页路径、或观察器被浏览器节流没来回调，最多多画一帧就自停，
+         不会出现「元素面板没选中、小猫还在转」。 */
+      function orbitGate() {
+        return orbitRadius > 0 && orbitInView && !!orbitPanel &&
+               orbitPanel.classList.contains('is-active') &&
+               carouselRoot.classList.contains('is-open') && !document.hidden;
+      }
+
+      function orbitFrame() {
+        /* 自检不过就地停表：不排下一帧、不读布局、不提交绘制（面板切走 / 轮播收起 / 滚出视口 / 页面隐藏） */
+        if (!orbitGate()) {
+          orbitRAF = 0;
+          orbitReleaseHover();
+          return;
+        }
+        orbitRAF = requestAnimationFrame(orbitFrame);
+        const dt = Math.min(orbitClock.getDelta(), 0.05);   // 暂停回来时不跳一大步
+        orbitT += dt;
+        const t = orbitT;
+        orbitCats.forEach((c, i) => {
+          const a = t * ORBIT_SPEED + (i / orbitCats.length) * Math.PI * 2;
+          c.group.position.set(Math.cos(a) * orbitRadius, Math.sin(a) * orbitRadius, 0);
+          /* 左乘四元数 = 绕世界坐标里那根轴转；不经过欧拉角，就不会在某个朝向上突然慢下来（万向锁） */
+          c.axis.applyAxisAngle(c.precess, PRECESS_SPEED * dt).normalize();
+          c.group.quaternion.premultiply(spinQ.setFromAxisAngle(c.axis, SPIN_SPEED * dt));
+          c.camU.set(c.group.position.x, c.group.position.y, orbitCatScale * ORBIT_CAM_RATIO);
+        });
+        if (++orbitHoverTick >= 3) { orbitHoverTick = 0; orbitHover(); }
+        orbitRenderer.render(orbitScene, orbitCamera);
+      }
+
+      /* 悬停命中：正交相机 1 世界单位 = 1 画布 px，猫心的屏幕位置可由世界坐标直接换算出，
+         不必为三只小猫各做一次射线（每只都是几万面的球，逐帧射线反而更贵）。
+         画布本身不吃指针（会盖住正文），坐标因此取自 window 上的 pointermove。
+         判定半径取 1.6×缩放：球体半径 1，耳朵探到 1.75，落中间容忍边缘。 */
+      function orbitHover() {
+        if (!orbitRadius) return;
+        const rect = orbitHost.getBoundingClientRect();
+        const k = orbitW > 0 ? rect.width / orbitW : 0;   // 面板 3D 变换后的实际缩放比
+        let hit = null, best = 0;
+        if (k > 0) {
+          const inside = orbitPX >= rect.left && orbitPX <= rect.right &&
+                         orbitPY >= rect.top && orbitPY <= rect.bottom;
+          if (inside) {
+            const r2 = (orbitCatScale * 1.6 * k) ** 2;
+            orbitCats.forEach((c) => {
+              const sx = rect.left + c.group.position.x * k;
+              const sy = rect.top + (orbitH / 2 - c.group.position.y) * k;
+              const dx = orbitPX - sx, dy = orbitPY - sy;
+              const d2 = dx * dx + dy * dy;
+              if (d2 <= r2 && (!hit || d2 < best)) { hit = c; best = d2; }
+            });
+          }
+        }
+        orbitCats.forEach((c) => {
+          const on = c === hit;
+          if (on === c.hovered) return;
+          c.hovered = on;
+          const s = orbitCatScale * (on ? ORBIT_HOVER : 1);
+          gsap.to(c.group.scale, { x: s, y: s, z: s, ...(on ? ORBIT_HOVER_IN : ORBIT_HOVER_OUT) });
+        });
+      }
+
+      /* 画布滚出视口（02 节之外）时停帧：猫根本看不见，没必要每帧提交三只猫的绘制。
+         用 IntersectionObserver 而不是每帧量 rect —— 浏览器自己算，回调只在进出视口时来一次 */
+      let orbitInView = true;
+      if (window.IntersectionObserver) {
+        new IntersectionObserver((entries) => {
+          orbitInView = entries[0].isIntersecting;
+          orbitSync();
+        }).observe(orbitHost);
+      }
+
+      /* 停帧的统一收尾：没有帧循环就没有命中判定，悬停态会一直挂着 → 统一归位
+         （归位 tween 归 gsap ticker 管，不依赖本帧循环） */
+      function orbitReleaseHover() {
+        orbitCats.forEach((c) => {
+          if (!c.hovered) return;
+          c.hovered = false;
+          gsap.to(c.group.scale, {
+            x: orbitCatScale, y: orbitCatScale, z: orbitCatScale, ...ORBIT_HOVER_OUT,
+          });
+        });
+      }
+
+      function orbitSync() {
+        if (orbitGate()) {
+          if (orbitRAF) return;
+          orbitClock.getDelta();      // 清掉停机期间的时间差
+          orbitHoverTick = 3;         // 恢复后的第一帧就补一次命中判定
+          orbitFrame();
+        } else if (orbitRAF) {
+          cancelAnimationFrame(orbitRAF);
+          orbitRAF = 0;
+          orbitReleaseHover();
+        }
+      }
+
+      layoutOrbit();
+      window.addEventListener('resize', layoutOrbit);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(layoutOrbit);
+      document.addEventListener('visibilitychange', orbitSync);
+      if (window.MutationObserver) {
+        const orbitMO = new MutationObserver(() => { layoutOrbit(); orbitSync(); });
+        if (orbitPanel) orbitMO.observe(orbitPanel, { attributes: true, attributeFilter: ['class'] });
+        orbitMO.observe(carouselRoot, { attributes: true, attributeFilter: ['class'] });
+      }
+      orbitSync();
+    }
+
+    /* ===== 衍生图件的悬停磁吸 =====
+           把锁屏面板中置卡面那套搬过来：指针进入 → 建透视 + 弹性放大 1.02，指针位置换算倾角（±5°，正中留 1.5° 仰角），
+           离开 → 弹性归位。票根 / 明信片 / 长幅三类图件共用这一个函数。
+           ⚠ 动哪一层是按冲突选的：
+             · 票根 —— 摇给 img。figure 本身被滚轮进度连续写 scale / opacity，再让它兼管倾角会打架；
+             · 明信片 —— 摇给 figure。整张「纸套」才是卡片本体，动 img 会从纸套里歪出去；
+             · 长幅 —— 摇给 img。figure 底下还有编号与题名那行说明，动 figure 会把说明一起转歪。 */
+    const derivPanel = document.getElementById('derivScroll')
+      ? document.getElementById('derivScroll').closest('.carousel-panel') : null;
+    const MAGNET_PERSP = 1000;   // 透视距离（px）—— 与歌单卡面同值，越小纵深越强
+    const MAGNET_SCALE = 1.02;   // 吸附放大倍率 —— 同上
+    const MAGNET_TILT  = 5;      // 倾斜峰值（deg）
+    const MAGNET_LEAN  = 1.5;    // 固定仰角：指针停在正中时 nx/ny 为 0，光靠视差没有倾斜感
+    const MAGNET_EDGE  = gsap.utils.clamp(-1, 1);
+
+    /* hitEl 收指针，moveEl 吃变换（两者可以是同一个元素） */
+    function bindMagnet(hitEl, moveEl) {
+      if (!hitEl || !moveEl) return;
+      let engaged = false;
+      let resetTween = null;
+
+      function release() {
+        if (!engaged) return;
+        engaged = false;
+        if (resetTween) resetTween.kill();
+        resetTween = gsap.to(moveEl, {
+          rotationX: 0, rotationY: 0, scale: 1,
+          duration: 0.9, ease: 'elastic.out(1, 0.6)', overwrite: 'auto',
+          onComplete: () => { resetTween = null; },
+        });
+      }
+
+      hitEl.addEventListener('pointermove', (e) => {
+        if (!derivPanel.classList.contains('is-active') || carouselRoot.classList.contains('no-interact')) {
+          release();                 // 侧位 / 面板正在动：摆脱吸附，且不再起新补间
+          return;
+        }
+        if (resetTween) { resetTween.kill(); resetTween = null; }
+        const rect = moveEl.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        if (!engaged) {              // 进入：先建透视（无旋转时不显形）+ 弹性放大
+          engaged = true;
+          /* scale: 1 显式写：GSAP 首次接管时会把 computed transform 里的缩放当成起点，之后写 transform 又乘一次 */
+          gsap.set(moveEl, { transformPerspective: MAGNET_PERSP, scale: 1 });
+          gsap.to(moveEl, { scale: MAGNET_SCALE, duration: 1.1, ease: 'elastic.out(1, 0.6)', overwrite: 'auto' });
+        }
+        const nx = MAGNET_EDGE((e.clientX - (rect.left + rect.width  / 2)) / (rect.width  / 2));
+        const ny = MAGNET_EDGE((e.clientY - (rect.top  + rect.height / 2)) / (rect.height / 2));
+        gsap.to(moveEl, {
+          rotationY: -nx * MAGNET_TILT, rotationX: ny * MAGNET_TILT + MAGNET_LEAN,
+          duration: 0.8, ease: 'power3.out', overwrite: 'auto',
+        });
+      });
+      hitEl.addEventListener('pointerleave', release);
+    }
+
+    if (derivPanel) {
+      /* 票根：figure 收指针，img 吃变换 */
+      derivPanel.querySelectorAll('.deriv-ticket').forEach((fig) => bindMagnet(fig, fig.querySelector('img')));
+      /* 明信片：纸套本身即卡片，figure 收发一体 */
+      derivPanel.querySelectorAll('.deriv-postcard').forEach((fig) => bindMagnet(fig, fig));
+      /* 长幅：figure 收指针（连说明一起算命中区），img 吃变换 */
+      derivPanel.querySelectorAll('.deriv-long').forEach((fig) => bindMagnet(fig, fig.querySelector('img')));
+    }
+
     /* ===== 第四「锁屏」面板：本地 mp3 歌单 =====
            — 批量导入 / 点选播放 / 拖拽排序（整行即抓取区）
            — 播放模式：list 轮播（默认） | shuffle 随机
@@ -3745,11 +4561,64 @@
       lockPanel.classList.toggle('is-playing', playing);
       miniPlayer.classList.toggle('is-playing', playing);
       setNodding(playing);   // 吉祥物本体点头跟着播放态起停（起停事件全走这里，别在播放键上另挂）
+      syncArtFloat(playing);  // 卡面悬浮 / 倾斜 / 呼吸同起同停
     }
     ['play', 'pause', 'ended'].forEach((ev) => {
       lockAudio.addEventListener(ev, syncLockPlaying);
       lockAudio.addEventListener(ev, syncProgress);   // 进度推进的启停挂同一批事件
     });
+
+    /* ===== 播放时的呼吸：中置卡面 + 两侧唱片同起同落 =====
+           卡面动 .lock-art-float（满幅居中容器），img 自己只留 --art-rise 的上移；唱片动 .lock-discs（行容器），
+           单张 .lock-disc 的 rotate 自转是 CSS 动画、写在它自己身上，两条通道不打架。
+           起停跟播放态走（由 syncLockPlaying 调）：暂停用一条短补间收回原位，再播从 0 重来，接缝不留半截姿态。 */
+    const lockArtFloat = lockPanel.querySelector('.lock-art-float');
+    const lockDiscs    = lockPanel.querySelector('.lock-discs');
+    const ART_PERSP = 1200;                 // 透视距离（px）：越小纵深越强
+    const artBreath  = gsap.timeline({ paused: true, repeat: -1 });
+    const discBreath = gsap.timeline({ paused: true, repeat: -1 });
+    if (lockArtFloat) {
+      gsap.set(lockArtFloat, { transformPerspective: ART_PERSP });
+      /* 四段时长不等：一圈 24s（6.0 / 5.65 / 6.0 / 6.35），起伏不被数成固定节拍，看起来才像呼吸而不是机械往复 */
+      artBreath
+        .to(lockArtFloat, { y: -12, rotationY: -6.0, rotationX:  3.8, rotationZ: -1.4, scale: 1.012, duration: 6.00, ease: 'sine.inOut' })
+        .to(lockArtFloat, { y: -18, rotationY:  4.4, rotationX: -3.2, rotationZ:  0.9, scale: 1.026, duration: 5.65, ease: 'sine.inOut' })
+        .to(lockArtFloat, { y: -6,  rotationY:  6.0, rotationX:  4.2, rotationZ:  1.4, scale: 1.010, duration: 6.00, ease: 'sine.inOut' })
+        .to(lockArtFloat, { y: 0,   rotationY:  0,   rotationX:  0,   rotationZ:  0,   scale: 1,     duration: 6.35, ease: 'sine.inOut' });
+    }
+    if (lockDiscs) {
+      /* 唱片的幅度整体收小：它们是陪衬，且盘面是正圆 —— 转多了会被看成歪掉的椭圆。
+         升降与卡面同幅（同一口气），倾角取卡面的一半左右，缩放不动（整行放大容易顶到面板左右边）。 */
+      gsap.set(lockDiscs, { transformPerspective: ART_PERSP });
+      /* 分段与卡面逐段对齐（同样 6.0 / 5.65 / 6.0 / 6.35），两者才始终在同一次呼吸里 */
+      discBreath
+        .to(lockDiscs, { y: -12, rotationY: -2.6, rotationX:  1.6, rotationZ: -0.8, duration: 6.00, ease: 'sine.inOut' })
+        .to(lockDiscs, { y: -18, rotationY:  1.9, rotationX: -1.4, rotationZ:  0.5, duration: 5.65, ease: 'sine.inOut' })
+        .to(lockDiscs, { y: -6,  rotationY:  2.6, rotationX:  1.8, rotationZ:  0.8, duration: 6.00, ease: 'sine.inOut' })
+        .to(lockDiscs, { y: 0,   rotationY:  0,   rotationX:  0,   rotationZ:  0,   duration: 6.35, ease: 'sine.inOut' });
+    }
+    let artBreathOn = false;
+    let artReset = null;    // 暂停时的归位补间（单独存着，恢复播放时只掐这一条）
+    function syncArtFloat(playing) {
+      if ((!lockArtFloat && !lockDiscs) || playing === artBreathOn) return;
+      artBreathOn = playing;
+      if (playing) {
+        /* ⚠ 不能在这里用 gsap.killTweensOf(lockArtFloat / lockDiscs)：它会把两条时间线里的子补间一起杀掉，
+           时间线随之变空，后面的 restart() 等于原地空转 —— 表现就是「播放了但一点不动」。
+           归位补间单独存成 artReset，只掐这一条。 */
+        if (artReset) { artReset.kill(); artReset = null; }
+        artBreath.restart();                // 从 0（原位）起转，接得上归位后的姿态
+        discBreath.restart();
+      } else {
+        artBreath.pause();
+        discBreath.pause();
+        artReset = gsap.to([lockArtFloat, lockDiscs].filter(Boolean), {
+          y: 0, rotationY: 0, rotationX: 0, rotationZ: 0, scale: 1,
+          duration: 0.9, ease: 'power3.out',
+          onComplete: () => { artReset = null; },
+        });
+      }
+    }
 
     /* ===== 歌单渲染与载入 ===== */
     /* 传输控件可用性 + 无曲目态类名（.is-audio 驱动底部功能区压暗 / 放行）。三档：
@@ -4444,7 +5313,10 @@
                所以识别区只能靠矩形自测；面板本体又不吃那两条命中门控，is-active / no-interact 也得在这里自己判。 */
     const STAGE_PERSP = 1000;   // 透视距离（px，越小纵深越强）—— 与歌单行同值
     const STAGE_SCALE = 1.02;   // 吸附时整组放大倍率 —— 与歌单行同值
-    const STAGE_TILT  = 2;      // 倾斜峰值（deg）—— 面板级尺寸，刻意远小于歌单行的 8，理由见上
+    const STAGE_TILT  = 5;      // 倾斜峰值（deg）—— 面板级尺寸，略小于歌单行的 8，理由见上
+    const STAGE_LEAN  = 1.5;    // 吸附时的固定仰角（deg）：指针停在卡面正中时 nx/ny 都是 0，光靠视差没有倾斜感，
+                                // 这条让卡面一进去就微微后仰（顶边离观者远一点），再叠加视差
+    const STAGE_HIT_PAD = 20;   // 卡面识别区外扩（px）：吃掉播放时卡面浮动 / 倾斜造成的边界抖动（浮幅 15px，留 5px 余量）
     /* 压在卡面之上、不该穿透触发吸附的层（卡面下半部分被歌单菜单盖住，指针落上去仍在其矩形内） */
     const STAGE_BLOCKER = '.lock-player__menu';
 
@@ -4488,8 +5360,10 @@
          且整组缩放是绕中心等比缩放（不改变归一化坐标），所以不存在歌单行那种「量到倾斜后的矩形会抖动」的问题 */
       const rect = lockArt.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
-      if (e.clientX < rect.left || e.clientX > rect.right ||
-          e.clientY < rect.top  || e.clientY > rect.bottom) {
+      /* 识别区外扩 STAGE_HIT_PAD：卡面播放时自己在上下浮（最多 15px），指针停在旧边缘上会反复
+         「出界归位 / 回来吸附」，外扩一圈把这段抖动吃掉 */
+      if (e.clientX < rect.left - STAGE_HIT_PAD || e.clientX > rect.right + STAGE_HIT_PAD ||
+          e.clientY < rect.top - STAGE_HIT_PAD || e.clientY > rect.bottom + STAGE_HIT_PAD) {
         stageMagnetRelease();       // 出了卡面：归位
         return;
       }
@@ -4505,7 +5379,7 @@
       const nx = gsap.utils.clamp(-1, 1, (e.clientX - (rect.left + rect.width  / 2)) / (rect.width  / 2));
       const ny = gsap.utils.clamp(-1, 1, (e.clientY - (rect.top  + rect.height / 2)) / (rect.height / 2));
       gsap.to(lockStage, {
-        rotationY: -nx * STAGE_TILT, rotationX: ny * STAGE_TILT,
+        rotationY: -nx * STAGE_TILT, rotationX: ny * STAGE_TILT + STAGE_LEAN,
         duration: 1.0, ease: 'power3.out', overwrite: 'auto',
       });
     });
@@ -4582,6 +5456,10 @@
     const customizeCloseBtns = gsap.utils.toArray('.customize-close');
 
     let customizeOpen = false;
+    /* 从面板里点「定制」时，要等轮播收起动画走完才弹浮层 —— 这段排期的句柄。
+       面板一旦被重新呼出（openCarousel）就 kill 掉，否则收起动画期间点了别的面板，
+       浮层会和面板同时挂在屏幕上。 */
+    let customizeEnterCall = null;
     /* 退出浮层落回哪儿取决于**从哪儿**进来：true = 从「定制」面板的按钮进来 → 回那张面板；
            false = 从顶栏「定制」快捷入口进来 → 没有上一级，退出即回桌面。每次 enterCustomize() 都会重写，别在别处改。 */
     let customizeReturnToPanel = false;
@@ -4607,6 +5485,13 @@
 
     function openCustomize() {
       if (customizeOpen) return;
+      /* 排期期间用户已经把轮播叫回来了（点了别的面板）→ 以面板为准，这次不弹浮层，顺手清掉句柄 */
+      if (carouselOpen) {
+        if (customizeEnterCall) { customizeEnterCall.kill(); customizeEnterCall = null; }
+        return;
+      }
+      /* 真的弹了：把还没到期的排期一并掐掉（连点「定制」时会先直接弹一次，那条旧排期再触发就会二次弹出） */
+      if (customizeEnterCall) { customizeEnterCall.kill(); customizeEnterCall = null; }
       customizeOpen = true;
       controls.autoRotate = false;   // 停转：进入定制面板后画面不再绕圈，吉祥物静止正对屏幕，方便对照调色
       resetView();                   // 并把已经自转转偏的视角平滑转回正视角
@@ -4649,8 +5534,13 @@
       customizeReturnToPanel = !!backToPanel;
       if (customizeOpen) return;
       if (!carouselOpen) { openCustomize(); return; }
+      if (customizeEnterCall) customizeEnterCall.kill();    // 连点只留最后一次排期，别叠两条
       exitCarousel();
-      gsap.delayedCall(CLOSE_DUR + 0.35, openCustomize);
+      /* 句柄留着：这段时间里若有人把轮播叫回来（点别的面板），openCarousel 会把它 kill 掉 */
+      customizeEnterCall = gsap.delayedCall(CLOSE_DUR + 0.35, () => {
+        customizeEnterCall = null;
+        openCustomize();
+      });
     }
 
     customizeTrigger.addEventListener('click', (e) => {
@@ -4668,7 +5558,8 @@
       if (!customizeOpen) return;
       closeCustomize();
       gsap.delayedCall(CUSTOMIZE_BACK_DELAY, () => {
-        if (carouselOpen) return;                  // 延迟期间用户已自己呼出，就不抢
+        /* 延迟期间用户已自己呼出面板、或又把浮层叫回来 → 都不抢，避免两边同时挂屏 */
+        if (carouselOpen || customizeOpen) return;
         activeIndex = CUSTOMIZE_PANEL_INDEX;       // 先定位再呼出：定制面板直接从中间升起，其他两侧错峰
         carouselOpen = true;
         carouselBtn.classList.add('active');
@@ -5021,6 +5912,12 @@
       if (document.fonts && document.fonts.ready) {
         document.fonts.ready.then(measure);   // Barlow 加载完成后重测，热区才精确
       }
+      /* 标题字号是 min(192px, 11vw)（随视口变），窗口缩放后字形侧隙要按新字号重量一次 */
+      let mTimer = 0;
+      window.addEventListener('resize', () => {
+        clearTimeout(mTimer);
+        mTimer = setTimeout(measure, 200);
+      });
     })();
 
     /* 第三「定制」面板：可拖拽元素（圆 / 勒洛 / 点阵字）弹性悬浮 + 移动 + 拖拽中右键自动旋转。
@@ -5154,18 +6051,17 @@
          想让它恢复，把 onBusy(false) 那两个 `if` 去掉即可。 */
 
     /* ↓↓↓ 接口配置读 js/ai-config.js（不进 git；模板见 ai-config.example.js）↓↓↓
-       拿 Key：https://open.bigmodel.cn/ → 手机号注册 + 实名 → 左侧「API 密钥管理」→ 创建。
+       本地直连：填 apiKey（https://open.bigmodel.cn/ → 实名 → 「API 密钥管理」），endpoint 用官方地址。
+       公网发布：endpoint 换成 worker/ 部署出来的地址（结尾补 /chat），apiKey 留空 —— 密钥只在服务端。
        glm-4-flash 永久免费、无 Token 上限，个人用足够。
 
-       ⚠ key 写在网页里，等于任何能打开这个页面的人都能看到（F12 或查看源码）。
-         本地自己看没问题；**一旦要发布到公网，必须改走 worker/ 那个代理**，
-         把 endpoint 换成代理地址、apiKey 留空即可（其余代码不用动）。 */
+       ⚠ 前端直连等于把 key 交到每个访客手里（F12 就能看到），只适合本地自己看。 */
     const AI_CFG      = window.STRCAT_AI_CONFIG || {};
     const AI_API_KEY  = AI_CFG.apiKey   || '';
     const AI_ENDPOINT = AI_CFG.endpoint || 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
     const AI_MODEL    = AI_CFG.model    || 'glm-4-flash';
 
-    const aiChat = initAiChat({
+    initAiChat({
       endpoint: AI_ENDPOINT,
       model: AI_MODEL,
       apiKey: AI_API_KEY,
@@ -5196,13 +6092,36 @@
       setRingText: (text) => setRingText(text, true),   // wrap=true：环停转归位后静止展示，必须一眼看全
     });
 
+    /* ===== 面板图片预热 =====
+       四张面板里 14 张图（合计约 6MB，解码后约 70MB），全部带 loading="lazy"：第一次呼出面板时
+       浏览器要在同一帧里把四张面板的图一起解码（实测 60–80ms），正好压在呼出动画的起手帧上 —— 那一下就是卡的原因。
+       这里在开场视频播放、主线程空闲时逐张 decode()，把解码挪到没人看的时候，呼出时就只剩合成。
+       一张接一张（等上一张兑现再发下一张），不跟开场动画抢解码线程；已解码的图 decode() 立即兑现，等于零成本。 */
+    (function warmPanelImages() {
+      const imgs = [...document.querySelectorAll('.carousel-panel img')];
+      if (!imgs.length) return;
+      let i = 0;
+      const step = () => {
+        if (i >= imgs.length) return;
+        const img = imgs[i++];
+        if (!img.complete) img.loading = 'eager';    // 还没开始下的（lazy）先放行，否则 decode 无从谈起
+        if (img.decode) img.decode().catch(() => {}).then(step);
+        else step();
+      };
+      const kick = () => {
+        if ('requestIdleCallback' in window) requestIdleCallback(step, { timeout: 2000 });
+        else setTimeout(step, 300);
+      };
+      setTimeout(kick, 1200);   // 先让视频起播、首屏稳定
+    })();
+
     /* ---------- 入场动画：全屏视频，播完不自动退出，点击网页任意位置退出 ---------- */
     (function openingGate() {
       const gate  = document.getElementById('opening');
       const video = document.getElementById('openingVideo');
       const hint  = document.getElementById('openingHint');
       /* 没有遮罩就没有「第一次点击」可等 —— 直接开转，否则吉祥物会永远静止 */
-      if (!gate || !video) { controls.autoRotate = true; return; }
+      if (!gate || !video) { controls.autoRotate = true; scenePaused = false; return; }
 
       let closed = false;
 
@@ -5260,6 +6179,9 @@
         document.removeEventListener('pointerdown', closeGate, true);
         /* 吉祥物从这一刻起开始自转（初始是关着的）—— 于是「开场结束 / 被跳过」与「开始转动」同刻。视频解码失败走 closeGate 时也在此开启。 */
         controls.autoRotate = true;
+        scenePaused = false;        // 遮罩开始淡出 → 恢复绘制（着色器在开场期间已预热过）
+        forceSceneRender = true;
+        hoverTick = HOVER_TICK;     // 暂停期间没做悬停判定，恢复后立刻补一次
         /* 背景由起始亮度补间回当前亮度（与遮罩淡出同时起步，具体节奏见上方 GATE_BG_* 常量） */
         if (bgMat) {
           gsap.to(bgMat.uniforms.uBgDim, {
@@ -5270,23 +6192,35 @@
             overwrite: 'auto'
           });
         }
-        /* 遮罩淡出 */
-        gsap.to(gate, {
-          autoAlpha: 0,
-          duration: GATE_FADE,
-          ease: 'power2.inOut',
-          onComplete: () => {
-            try { video.pause(); } catch (_) { /* 忽略 */ }
-            gate.remove();
-          }
-        });
-        /* 画面同步放大：从中心向外扩散，与淡出同曲线同节奏 */
+        /* 遮罩淡出：只淡视频，不再给整块遮罩做组透明度。
+           组透明度会让合成器先把整块遮罩（视频这时还放大到 2× 视口）渲进一张临时表面再整体叠上去，
+           进入那一帧的大头就是这张表面；视频自己带 alpha 是叶子图层，直接合成，不额外开表面。
+           底部那层纯黑底色此刻被不透明的视频完整盖着，先置空即可 —— 这样淡出的中间调与原来的组透明度完全一致。 */
+        if (video.readyState >= 2) gsap.set(gate, { backgroundColor: 'transparent' });   // 视频没解出画面时保留黑底，仍走淡出
         gsap.to(video, {
+          opacity: 0,
           scale: GATE_ZOOM,
           duration: GATE_FADE,
           ease: 'power2.inOut',
-          overwrite: 'auto'
+          overwrite: 'auto',
+          onComplete: () => {
+            gate.style.visibility = 'hidden';
+            gate.style.pointerEvents = 'none';
+            /* 先只暂停：停播很便宜，而且画面已经淡到全透明，不会看到定格 */
+            try { video.pause(); } catch (_) { /* 忽略 */ }
+            /* 销毁解码器 + 释放 17MB 缓冲要几十毫秒 —— 别让它落在入场动画里（吉祥物正弹性长起来、
+               顶栏正在滑入，那几秒本来就满）。等入场收尾（4.5s 后）再挑空闲帧做。 */
+            const release = () => {
+              try { video.removeAttribute('src'); video.load(); } catch (_) { /* 忽略 */ }
+              if (gate.parentNode) gate.parentNode.removeChild(gate);
+            };
+            setTimeout(() => {
+              if ('requestIdleCallback' in window) requestIdleCallback(release, { timeout: 1200 });
+              else release();
+            }, 4500);
+          }
         });
+        if (hint) gsap.to(hint, { opacity: 0, duration: GATE_FADE * 0.6, ease: 'power2.in', overwrite: 'auto' });
         /* 吉祥物入场：先压到更小体积，再弹性长回当前设定体积。曲线复用 hover 放大 HOVER_IN；duration 独立覆盖，改 GATE_MASCOT_DUR 不影响 hover */
         gsap.set(mascot.scale, { x: GATE_MASCOT_FROM, y: GATE_MASCOT_FROM, z: GATE_MASCOT_FROM });
         gsap.to(mascot.scale, {

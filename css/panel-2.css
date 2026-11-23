@@ -1,10 +1,368 @@
-/* ===== 第二面板 · 衍生（.panel-deriv）：居中说明段落 =====（样式自 index.html 内联 <style> 拆出） */
+/* ===== 第二面板 · 衍生（.carousel-panel--deriv）：文创陈列页 =====
+   四段纵向排布：引言 / 01 票根（横向滚轮陈列）/ 02 明信片（左右排 + 侧栏文字）/ 03 长幅（满宽叠放）。
+   面板本体不滚动，滚动交给内层 .deriv-scroll（与第一面板 .panel-scroll 同一套做法）。 */
 
-  /* 第二「衍生」面板：居中说明段落。正文样式复用 .panel-join__zh / .panel-join__en-p，
-     此处仅覆盖盒宽与对齐；不给 p 设 color，否则会盖掉英文段落的 --grey */
-  .panel-deriv {
-    width: 448px;
-    max-width: 100%;
-    text-align: center;
+  /* 面板：取消 grid 居中与内边距，内容自上而下参与滚动 */
+  .carousel-panel--deriv {
+    display: block;
+    padding: 0;
+  }
+
+  /* 滚动容器：左右留白在此统一给（长幅靠它做「占满内容宽」）；position 供 JS 读 offsetTop 换算滚动进度。
+     纵向用 flex 列 + gap 排开引言与三节，与元素面板 .idea 的分节间距同一套写法 */
+  .deriv-scroll {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(48px, 8vh, 88px);      /* 段间间距：随视口高浮动，48 起、88 封顶 */
+    padding: 0 clamp(24px, 3.2vw, 56px) 72px;
+    scroll-behavior: auto;      /* 别用 smooth：票根进度按帧读 scrollTop，平滑滚动会让位移滞后 */
+  }
+  /* 子项一律不收缩：.panel-scroll 的高度是 100%，纵向 flex 下浏览器会把超高内容压回去，
+     .deriv-run 一旦被压回一屏，票根的横向行程就没了 */
+  .deriv-scroll > * { flex: none; }
+
+  /* ---------- 引言 ---------- */
+  .deriv-intro {
+    /* 首块内容压在 --panel-top（64px）：原来靠 min-height + 居中排布，顶部空白随视口高浮动，
+       与元素、定制面板对不齐。现在改为从上往下排，多出来的高度留在这块之下。
+       顶部还要补一层字号差：元素面板大标题是 min(192px, 11vw) 且 scaleY(1.12)，
+       字形顶端距内容盒上沿约 0.259em（64px 起算时 176px 字取下约 45.6px）；
+       「衍生」自身的字形顶端约 0.31em（80px 时约 25px），按字号现算，
+       改 --kicker-size 时这里自动跟着走。补上差值，两页标题的字面顶端才落在同一条横线上。
+       大字号的 0.259em 随视口走，所以这里跟着 min(192px, 11vw) 一起算，不写死像素 */
+    --kicker-size: 80px;
+    padding-top: calc(var(--panel-top, 64px) + min(192px, 11vw) * 0.259 - 0.31 * var(--kicker-size));
+    min-height: 46vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 16px;
     pointer-events: none;
+  }
+  /* 主题字「衍生」：本页最大的一号字（--kicker-size，见上），把这一页的主题先立住；
+     英文标小一档（48px），靠颜色和字重退到后面 */
+  .deriv-kicker {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    /* 按内容收缩：三色带的红段要正好量到这里（红段右端对齐 MERCHANDISE 的右端），
+       宽着铺满整行就没法当参照 —— 实测宽度由脚本写成 --red-w */
+    width: fit-content;
+    font-family: var(--text-sans);
+    font-size: var(--kicker-size);
+    font-weight: var(--text-medium);
+    color: var(--white);
+  }
+  /* 三色带：接在「衍生」标题行下方，8px 高、与面板等宽（左右各抵掉滚动容器的留白），
+     红黄蓝按 3:2:1 分段，宽度递减。它是 .deriv-intro 的直接子项，
+     上下间距都走 intro 的 gap。
+     红段不用比例：宽度取 --red-w（脚本量「面板左沿 → 标题行右端」写成），
+     右端因此与 MERCHANDISE 的右端对齐；剩下的黄蓝再按 2:1 分 */
+  .deriv-bars {
+    display: flex;
+    height: 8px;
+    margin: 0 calc(-1 * clamp(24px, 3.2vw, 56px));
+  }
+  .deriv-bars i { display: block; height: 100%; }
+  .deriv-bars i:nth-child(1) { flex: 0 0 var(--red-w, 40%); background: var(--red); }
+  .deriv-bars i:nth-child(2) { flex: 2 1 0; background: var(--yellow); }
+  .deriv-bars i:nth-child(3) { flex: 1 1 0; background: var(--blue); }
+  .deriv-kicker__word { flex: none; }
+  /* 英文标 48px，比「衍生」小一档；层级同时靠 --dim 灰和更细的字重区分。
+     基线对齐后两段仍差一截：汉字字面越过基线约 0.0875em（80px 时 7px），Barlow 的字母正好坐在基线上，
+     所以英文要下移同样的量，字面底部才和「衍生」齐平。量随 --kicker-size 走，改字号不用再算 */
+  .deriv-kicker__en {
+    flex: none;
+    position: relative;
+    top: calc(var(--kicker-size) * 0.0875);
+    font-family: var(--text-barlow);
+    font-size: 48px;
+    font-weight: var(--text-thin);
+    color: var(--dim);
+  }
+  /* 引言正文：段落间距收成一档（行高与字距走各字体的默认值，全站统一） */
+  .deriv-intro p.panel-join__zh {
+    margin-top: 8px;
+    pointer-events: none;
+  }
+  /* 英文正文与元素面板 .idea-p--en 一致：16px（原 14px），颜色再压一档 */
+  .deriv-intro .panel-join__en-p {
+    font-size: var(--text-smallest);
+    color: var(--dim);
+  }
+
+  /* ---------- 分节头：编号 + 中英标题（下方一道细线，与元素面板 .idea-head 同款）+ 说明 ----------
+     段与段的上下间隔不在这里给，统一由 .deriv-scroll 的 flex gap 控制（同元素面板 .idea 的做法） */
+  .deriv-head {
+    /* 序号列宽与列间距提成变量：说明段靠同一个和值缩进，才能和标题起笔线对齐 */
+    --no-col: 44px;
+    --no-gap: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    /* 头部整块收在 760px：说明段因此有了确定宽度，下方细线按同一宽度画，线长即正文宽 */
+    max-width: 760px;
+    margin-bottom: 32px;
+  }
+  /* 标题行：细线只压在正文列上 —— 左端从标题首字起（跳过年序号），右端到头部右沿，
+     长度与下方说明段一致。原先 border 铺满整行，比正文宽出序号那一截 */
+  .deriv-head__row {
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--no-col) minmax(0, 1fr);
+    column-gap: var(--no-gap);
+    /* 序号与标题同号后按基线对齐，两种字体行框不同高也不会错位半行 */
+    align-items: baseline;
+    padding-bottom: 12px;
+  }
+  .deriv-head__row::after {
+    content: "";
+    position: absolute;
+    left: calc(var(--no-col) + var(--no-gap));
+    right: 0;
+    bottom: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+  }
+  /* 02 明信片没有说明段，下面的内容（文字 + 四张图）铺满整节：线跟着放到整节宽，
+     左端回到最左侧、右端到图的右沿，与下方那块内容严格等宽 */
+  .deriv-sec:nth-child(3) .deriv-head { max-width: none; }
+  .deriv-sec:nth-child(3) .deriv-head__row::after { left: 0; }
+  .deriv-head__no {
+    font-family: var(--text-barlow);
+    font-size: var(--text-big);        /* 与分节标题同号（同元素面板的 .idea-head__no） */
+    font-weight: var(--text-medium);
+    color: var(--red);
+    font-variant-numeric: tabular-nums;
+  }
+  /* 三节序号轮转红黄蓝：.deriv-scroll 的首个子元素是引言，故 01/02/03 落在 nth-child 2/3/4 */
+  .deriv-sec:nth-child(3) .deriv-head__no { color: var(--yellow); }
+  .deriv-sec:nth-child(4) .deriv-head__no { color: var(--blue); }
+  .deriv-head__title {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    font-family: var(--text-sans);
+    font-size: var(--text-big);
+    font-weight: var(--text-medium);
+    color: var(--white);
+  }
+  .deriv-head__en {
+    font-family: var(--text-barlow);
+    font-size: var(--text-tiny);   /* 14px：与正文英文同号，层级靠 --dim 灰与细字重 */
+    font-weight: var(--text-thin);
+    color: var(--dim);
+  }
+  .deriv-head__desc {
+    margin-left: calc(var(--no-col) + var(--no-gap));   /* 与标题首字同一条起笔线 */
+    /* 宽度不再单设上限：靠 .deriv-head 的 760px 收住，正文右沿正好是细线的右端 */
+    font-family: var(--text-sans);
+    font-size: var(--text-smallest);
+    font-weight: 400;
+    color: var(--grey);
+  }
+  .deriv-head__desc--en {
+    font-family: var(--text-barlow);
+    font-size: var(--text-smallest);   /* 16px：与中文说明同号，中英等大 */
+    color: var(--dim);
+  }
+  /* 明信片段没有说明（文字挪到侧栏），分节头只留编号与标题 */
+  .deriv-text {
+    font-family: var(--text-sans);
+    font-size: var(--text-smallest);
+    color: var(--grey);
+  }
+  .deriv-text--en {
+    font-family: var(--text-barlow);
+    font-size: var(--text-smallest);   /* 16px：与中文正文同号 */
+    color: var(--dim);
+  }
+
+  /* ---------- 01 票根：一屏舞台 + 横向行程 ---------- */
+  /* 跑马段高度由 JS 写成「一屏 + 行程」；这里只兜一个初始值，避免脚本到位前塌成 0 */
+  .deriv-run {
+    position: relative;
+    height: 80vh;
+  }
+  /* 舞台：粘在滚动容器顶端；高度 = 滚动容器的可见高（--deriv-stage-h 由 JS 写，
+     纸条高度也从它派生 —— 面板尺寸一变，纸条跟着改，不用另调比例） */
+  .deriv-stage {
+    position: sticky;
+    top: 0;
+    height: var(--deriv-stage-h, 60vh);
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+  }
+  /* 张数：从右下角脚注挪到纸条上方居中。纸条高 70% 且垂直居中，上沿在 50% − h×0.35，
+     这里再往上留 28px，滚动时它跟着纸条一起走，不贴舞台边 */
+  .deriv-stage__foot {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(50% + var(--deriv-stage-h, 60vh) * 0.35 + 28px);
+    display: flex;
+    justify-content: center;
+    font-family: var(--text-barlow);
+    font-size: var(--text-tiny);
+    color: var(--dim);
+    pointer-events: none;
+  }
+  .deriv-stage__count {
+    font-variant-numeric: tabular-nums;
+  }
+  .deriv-stage__count b {
+    font-family: var(--text-barlow);
+    font-size: inherit;    /* 与「/ 06」同号（14px），层级只靠白色与字重区分 */
+    font-weight: var(--text-medium);
+    color: var(--white);
+  }
+  /* 纸条横排：绝对居中，位移由 GSAP 写 x（xPercent/yPercent 已在 JS 里设为 -50） */
+  .deriv-tickets {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    display: flex;
+    align-items: center;
+    gap: 0;                       /* 间距由 margin-right 给：JS 量出的步进见 measureDerivTickets() */
+    will-change: transform;
+  }
+  .deriv-ticket {
+    flex: none;
+    height: calc(var(--deriv-stage-h, 60vh) * 0.7);
+    aspect-ratio: 600 / 1486;     /* 原稿尺寸：图片没加载完也能量出纸宽（JS 靠它算步进） */
+    margin-right: calc(var(--deriv-step, 0px) - var(--deriv-ticket-w, 0px));
+    filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.35));
+    will-change: transform, opacity;
+  }
+  .deriv-ticket:last-child { margin-right: 0; }
+  .deriv-ticket img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+  }
+  /* 进度点 */
+  .deriv-stage__dots {
+    position: absolute;
+    left: 50%;
+    bottom: 22px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+  }
+  .deriv-stage__dots i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(240, 240, 230, 0.28);
+    transition: background-color 0.25s ease, transform 0.25s ease;
+  }
+  .deriv-stage__dots i.is-on {
+    background: var(--white);
+    transform: scale(1.5);
+  }
+
+  /* ---------- 02 明信片：文字在左、四张横排一行（等大正方形触控区）在右 ---------- */
+  .deriv-postcards {
+    display: grid;
+    grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+    column-gap: clamp(24px, 3vw, 48px);
+    /* 顶对齐：右列四张方图的边长比文字块高，若用 end 会把左列文字压到图底，
+       标题下方那段空白就被图片撑开了；改成 start 后文字紧接标题线下的 32px */
+    align-items: start;
+  }
+  .deriv-postcards__row {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+  }
+  /* 每张一个等大正方形：去掉原来的白底、描边与 6px 内衬，纸套本身只承担命中与缩放，
+     图在框内 contain 居中 —— 四张原稿横竖比例不同，触控区却是同一尺寸的正方形 */
+  .deriv-postcard {
+    flex: 1 1 0;
+    min-width: 0;
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    /* transform 不进 transition：悬停的倾斜 / 放大由 GSAP 逐帧写内联样式，
+       这里再挂过渡会让每一帧都被 CSS 再插值一遍，手感发黏 */
+    will-change: transform;
+  }
+  .deriv-postcard img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+  }
+  .deriv-postcards__text {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    /* 挪到左侧后不再需要内边距：与图之间的距离由 .deriv-postcards 的 column-gap 给 */
+  }
+
+  /* ---------- 03 长幅：2:1 横向陈列，单张宽 840px，左 / 右 / 左 交错 ---------- */
+  .deriv-longs {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+  .deriv-long { width: min(100%, 840px); }
+  .deriv-long:nth-child(odd)  { align-self: flex-start; }
+  .deriv-long:nth-child(even) { align-self: flex-end; }
+  .deriv-long img {
+    display: block;
+    width: 100%;
+    height: auto;
+    pointer-events: none;
+    user-select: none;
+  }
+  /* 说明一律贴图的左沿：三张长幅不管图靠左还是靠右，文字都从图的左边起笔 */
+  .deriv-long figcaption {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-top: 10px;
+    padding-top: 8px;
+  }
+  .deriv-long__no {
+    font-family: var(--text-barlow);
+    font-size: var(--text-smallest);   /* 与右侧中文标题（.deriv-long__cap）同号，不再是小标签 */
+    color: var(--blue);                /* 03 长幅这一段固定取蓝，三张一致 */
+    font-variant-numeric: tabular-nums;
+  }
+  .deriv-long__cap {
+    font-family: var(--text-sans);
+    font-size: var(--text-smallest);
+    color: var(--white);
+  }
+  .deriv-long__en {
+    margin-left: auto;
+    font-family: var(--text-barlow);
+    font-size: var(--text-smallest);   /* 与中文标题同号（12 → 16），只靠颜色与字重拉开层级 */
+    color: var(--dim);
+  }
+
+  /* ---------- 窄屏：明信片改成「图上一行、文字在下」；票根缩小一档 ---------- */
+  @media (max-width: 900px) {
+    .deriv-intro { min-height: 38vh; }
+    .deriv-head { --no-col: 32px; --no-gap: 12px; }
+    .deriv-head__row { grid-template-columns: var(--no-col) minmax(0, 1fr); column-gap: var(--no-gap); }
+    .deriv-head__title { font-size: var(--text-normal); }
+    .deriv-head__no { font-size: var(--text-normal); }   /* 窄屏跟着标题降一档，仍与标题同号 */
+    .deriv-postcards { grid-template-columns: minmax(0, 1fr); row-gap: 20px; }
+    /* 桌面是「文字左、图右」，堆叠后改回图在上、文字在下（DOM 里文字在前，用 order 调） */
+    .deriv-postcards__row { order: 1; gap: 8px; }
+    .deriv-postcards__text {
+      order: 2;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.16);   /* 竖排时用横线把图和文字分开 */
+    }
   }

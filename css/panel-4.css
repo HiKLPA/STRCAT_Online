@@ -26,7 +26,10 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 394.5px;
-    transform: translateY(calc(var(--disc-rise) * -1));   /* 负值上移（--disc-rise 在上方变量块） */
+    /* 这层只承载播放时的悬浮 / 倾斜补间（GSAP 写 transform），上移量下放到每张唱片身上 ——
+       GSAP 接管元素时会往内联样式里写 translate:none / scale:none 把独立变换位清掉，
+       本层若挂 translate 会被一起抹平（唱片会矮 21px）。挂到子元素上就互不相干了。 */
+    will-change: transform;
     pointer-events: none;
   }
   /* 唱片：黑胶盘面（沟槽 + 受光）+ 中央三色标签 + 中心孔。左右各一张，同速反向。
@@ -44,6 +47,9 @@
     --band-yellow2: 70%;   /* 黄带下沿 */
     --band-blue:    80%;     /* 蓝带上沿 */
     position: relative;
+    /* 行级上移（--disc-rise）下放到每张唱片：父层 .lock-discs 要空出 transform 位给 GSAP 的呼吸补间。
+       独立 translate 与自转动画（transform: rotate）互不干扰，两条通道各走各的 */
+    translate: 0 calc(var(--disc-rise) * -1);
     flex: none;
     width: var(--disc-size);
     height: var(--disc-size);
@@ -97,15 +103,25 @@
   @keyframes lock-disc-spin { to { transform: rotate(360deg); } }
 
   /* ---------- 区域一 · 中置卡面（icon/disc_type1.png） ---------- */
-  /* <img src> 直引磁盘文件 —— 换图刷新即生效。描边与阴影写在 img 自身，外面不套盒子。 */
+  /* 动画层：铺满面板的居中容器，播放时的悬浮 / 倾斜 / 呼吸补间只写这一层的 transform。
+     刻意用「满幅盒子 + 居中排布」而不是「50% 宽 + translate(-50%)」：后者把百分比位移写进 transform，
+     GSAP 首次接管时会把它解析成 px 并接管整条 transform，窗口一改尺寸就回不到正中。
+     支点落在面板中心，卡面本身只上移 --art-rise（14px），倾斜绕心差这点量看不出。 */
+  .lock-art-float {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    will-change: transform;
+    pointer-events: none;
+  }
+  /* 图片层：<img src> 直引磁盘文件 —— 换图刷新即生效。描边与阴影写在 img 自身，外面不套盒子。 */
   .lock-art {
     --art-w: 50%;        /* 卡面宽度（占面板宽 %）；高度由素材宽高比推出，别写 height */
-    position: absolute;
-    top: 50%;
-    left: 50%;
+    display: block;
     width: var(--art-w);
     height: auto;
-    transform: translate(-50%, calc(-50% - var(--art-rise)));    /* 按自身尺寸回正 + 按 --art-rise 上移 */
+    transform: translateY(calc(var(--art-rise) * -1));    /* 按 --art-rise 上移（动画层只管自己的 transform） */
     /* 跟随素材白框的圆角（两段百分比，单值会被宽高比拉成椭圆）；换素材时这三个数一起改 */
     border-radius: calc(16 / 680 * 100%) / calc(16 / 400 * 100%);
     /* --art-shadow 卡面落地影（"浮起来"的主要来源）· --art-glow 发光（常态与 .carousel-panel 同值）
@@ -142,9 +158,8 @@
      在台面组内 → 跟着整组吸附倾斜。
      字体走 --text-barlow：拉丁命中 Barlow，中文回退思源黑体 */
   .lock-player__title {
-    /* 就近声明（本元素不在 .lock-player 子树里，取不到那边的变量）：--title-size 曲名字号 / --title-line 行高 */
+    /* 就近声明（本元素不在 .lock-player 子树里，取不到那边的变量）：--title-size 曲名字号 */
     --title-size: var(--text-normal);
-    --title-line: 1;
     position: absolute;
     left: 0;
     right: 0;
@@ -154,7 +169,6 @@
     font-family: var(--text-barlow);
     font-size: var(--title-size);
     font-weight: var(--text-thin);
-    line-height: var(--title-line);
     color: var(--white);
     white-space: nowrap;
     overflow: hidden;
@@ -522,7 +536,6 @@
     font-family: var(--text-barlow);
     font-size: var(--text-tiny);
     font-weight: var(--text-thin);
-    line-height: 1;
     color: var(--white);
     font-variant-numeric: tabular-nums; /* 等宽数字，跳秒不抖动 */
     user-select: none;
@@ -649,7 +662,6 @@
   .mini-player__name {
     flex: none;
     font-size: var(--text-tiniest);
-    line-height: 1;
   }
   /* 走马灯门控：歌单菜单要「菜单真展开」才滚，这块是常驻的 → 装不下就一直滚。
      另一条（动画本体与 paused 初值）在 .lock-player__name 一节，靠源码顺序压过后再放开 */

@@ -30,8 +30,8 @@ npx serve .
 |---|---|
 | 3D 本体 | 拖拽旋转、滚轮缩放；点击呼出对话输入框，Esc 或点空白收起 |
 | AI 对话 | 智谱 GLM-4-Flash，支持天气与时间两个工具调用，答案写进外围字符环（自动分段 + 自动字号） |
-| 顶栏菜单 | 四枚入口：形象、衍生、定制、锁屏，面板以 squash & stretch 浮出 |
-| 面板一 形象 | 标题字块 + 三色条纹，介绍吉祥物的造型与配色 |
+| 顶栏菜单 | 四枚入口：介绍、衍生、定制、锁屏，面板以 squash & stretch 浮出 |
+| 面板一 介绍 | 标题字块 + 三色条纹，介绍吉祥物的造型与配色 |
 | 面板二 衍生 | 票根、条幅、明信片、鼠标样式等文创说明 |
 | 面板三 定制 | 跳转定制浮层：形态、配色、表情、字符内容、头饰（方凳 / 键盘） |
 | 面板四 锁屏 | 唱片播放器：本地歌单导入、点选、拖拽排序、可拖动进度条，曲名与进度同步到顶栏迷你播放器 |
@@ -47,7 +47,7 @@ npx serve .
 index.html          # HTML + 三段内联 CSS（公共样式）+ 内联 module JS（3D 场景、动画、播放器）
 css/
   topbar.css        # 顶栏、菜单、迷你播放器
-  panel-1.css       # 形象面板
+  panel-1.css       # 介绍面板
   panel-2.css       # 衍生面板
   panel-3.css       # 定制面板 + 触发按钮 + 拖拽
   panel-4.css       # 锁屏播放器
@@ -88,7 +88,7 @@ cp js/ai-config.example.js js/ai-config.js
 ## 技术栈
 
 - Three.js r160：GLTFLoader 载入吉祥物与头饰，OrbitControls 做轨道视角，字符环用 Canvas 贴图绕在圆环上
-- GSAP 3.12.5 + CustomEase + ScrollTrigger：面板呼出、入场、放大态位移
+- GSAP 3.12.5 + CustomEase：面板呼出、入场、放大态位移
 - 原生 CSS：CSS 变量做字号与配色 token，`cqw` 做自适应间距，无构建步骤
 - 智谱 GLM-4-Flash：OpenAI 兼容格式，可直接换模型或换后端
 
