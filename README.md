@@ -36,6 +36,7 @@ npx serve .
 | 面板三 定制 | 跳转定制浮层：形态、配色、表情、字符内容、头饰（方凳 / 键盘） |
 | 面板四 锁屏 | 唱片播放器：本地歌单导入、点选、拖拽排序、可拖动进度条，曲名与进度同步到顶栏迷你播放器 |
 | 常驻迷你播放器 | 顶栏居中，内圈白描边走进度，随顶栏一起在放大态退出 |
+| 左右两栏 | 吉祥物两侧：学院新闻 / 科研动态，只显示标题、日期与原文首图，点击跳转学院官网；数据每天 07:10 自动更新 |
 
 定制面板改的是同一个 3D 对象：颜色走 `--red` / `--yellow` / `--blue`，头饰换的是 `models/` 下的 GLB。刷新即回到默认形象，不留存档。
 
@@ -52,10 +53,18 @@ css/
   panel-3.css       # 定制面板 + 触发按钮 + 拖拽
   panel-4.css       # 锁屏播放器
   ai-chat.css       # 对话输入框
+  feed.css          # 吉祥物左右两栏（学院新闻 / 科研动态）
 js/
   ai-chat.js        # AI 对话：输入框 DOM、两轮 function calling、字符环分段
   ai-config.js      # 本地密钥（不进 git）
   ai-config.example.js  # 上面那份的模板
+  feed.js           # 左右两栏：读 data/sse-feed.json 渲染，按留白显隐
+data/
+  sse-feed.json     # 学院新闻 / 科研动态的最新条目（由 GitHub Actions 每天生成）
+tools/
+  fetch-sse.mjs     # 抓取脚本：2 个列表页 + 最新 6 篇详情，每天一次
+.github/workflows/
+  sse-feed.yml      # 每天 07:10（北京时间）跑上面的脚本并提交数据
 lib/                # three.js r160 / OrbitControls / GLTFLoader、gsap 3.12.5、CustomEase、ScrollTrigger
 models/             # 头饰模型（Blender 导出）：stool.glb、keyboard.glb
 icon/               # favicon、唱片卡面
@@ -82,6 +91,24 @@ cp js/ai-config.example.js js/ai-config.js
 **公网发布（走代理）** — 把 `endpoint` 换成 `worker/` 部署出来的地址（结尾补 `/chat`），`apiKey` 留空。密钥只存在 Cloudflare 侧，浏览器拿不到。部署步骤见 [`worker/README.md`](worker/README.md)。
 
 没有配置时，点击本体只会提示还没配好接口，页面其余部分不受影响。
+
+---
+
+## 学院新闻 / 科研动态
+
+吉祥物左右两栏展示学院官网的「学院新闻」与「科研动态」，只保留标题、日期与原文首图，点击在新标签打开原文。
+
+数据来自 `https://sse.sysu.edu.cn/news` 与 `/research/trends`。站点没有 RSS 或 JSON 接口，也不发 CORS 头，所以不能在浏览器里直接抓；改为由 `.github/workflows/sse-feed.yml` 每天 07:10（北京时间）跑 `tools/fetch-sse.mjs`，把结果写进 `data/sse-feed.json` 并提交。页面同源读取这份 JSON，不需要任何后端。
+
+手动更新一次：
+
+```bash
+node tools/fetch-sse.mjs
+```
+
+抓取遵守的边界：每天一次、共 8 个请求、间隔 1.2 秒；只取标题、日期、原文链接和正文首图 URL，不下载正文、不转存图片；UA 写明用途，遇 403 / 429 立即停止，不绕过任何访问限制；不抓教师主页、公示名单等含个人信息的页面。内容版权归中山大学软件工程学院，两栏底部标注来源并深链回原文。
+
+官网更新不频繁（发稿间隔常以周计），所以两栏显示的是「最新 3 条」并标日期，而不是严格的「当日」。
 
 ---
 

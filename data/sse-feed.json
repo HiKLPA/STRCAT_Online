@@ -1,0 +1,55 @@
+{
+  "source": {
+    "name": "中山大学软件工程学院",
+    "url": "https://sse.sysu.edu.cn/"
+  },
+  "updatedAt": "2026-11-28T00:56:03+08:00",
+  "sections": {
+    "news": {
+      "label": "学院新闻",
+      "items": [
+        {
+          "title": "喜报丨我院学子在第八届CCF开源创新大赛MoonBit赛道斩获1项二等奖、3项三等奖",
+          "url": "https://sse.sysu.edu.cn/article/1114",
+          "date": "2026-09-05",
+          "image": "https://sse.sysu.edu.cn/sites/default/files/inline-images/image_1882.png"
+        },
+        {
+          "title": "CCF区块链专委会走进中山大学暨第六届计算机科学与区块链国际学术会议（CCSB 2026）顺利召开",
+          "url": "https://sse.sysu.edu.cn/article/1113",
+          "date": "2026-09-04",
+          "image": "https://sse.sysu.edu.cn/sites/default/files/inline-images/image_1877.png"
+        },
+        {
+          "title": "学院动态丨我院院长受邀在广师大领导干部素质能力提升专题读书班作报告",
+          "url": "https://sse.sysu.edu.cn/article/1112",
+          "date": "2026-09-02",
+          "image": "https://sse.sysu.edu.cn/sites/default/files/inline-images/image_1876.png"
+        }
+      ]
+    },
+    "research": {
+      "label": "科研动态",
+      "items": [
+        {
+          "title": "喜报丨我院本科生李林、黄佳伟、全启浩的论文被CCF A类国际顶级会议ACM MM 2026接收",
+          "url": "https://sse.sysu.edu.cn/article/1091",
+          "date": "2026-07-25",
+          "image": "https://sse.sysu.edu.cn/sites/default/files/inline-images/image_1825.png"
+        },
+        {
+          "title": "喜报丨我院本科生夏志昆的一作论文被软件工程领域国际顶级会议ASE 2026接收",
+          "url": "https://sse.sysu.edu.cn/article/1087",
+          "date": "2026-07-03",
+          "image": "https://sse.sysu.edu.cn/sites/default/files/inline-images/image_1815.png"
+        },
+        {
+          "title": "喜报丨我院本科生何恺锋的一作论文被软件工程领域国际顶级会议FSE 2026接收",
+          "url": "https://sse.sysu.edu.cn/article/1061",
+          "date": "2026-03-31",
+          "image": "https://sse.sysu.edu.cn/sites/default/files/inline-images/image_1715.png"
+        }
+      ]
+    }
+  }
+}

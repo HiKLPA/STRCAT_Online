@@ -1,0 +1,40 @@
+name: Update SSE feed
+
+# 每天 07:10（北京时间）抓一次学院新闻与科研动态，写回 data/sse-feed.json。
+# 只取标题 / 日期 / 原文链接 / 首图 URL，每天 8 个请求、间隔 1.2s，见 tools/fetch-sse.mjs 顶部说明。
+on:
+  schedule:
+    - cron: "10 23 * * *"     # UTC 23:10 = Asia/Shanghai 07:10
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sse-feed
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Fetch and write data/sse-feed.json
+        run: node tools/fetch-sse.mjs
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/sse-feed.json
+          if git diff --staged --quiet; then
+            echo "没有变化，跳过提交"
+          else
+            git commit -m "chore: update SSE feed"
+            git push
+          fi

@@ -1,0 +1,181 @@
+/* ===== 吉祥物左右两栏：学院新闻 / 科研动态 =====
+   数据来自 data/sse-feed.json（由 tools/fetch-sse.mjs 每天生成一次），
+   只展示标题、日期与原文首图，点击在新标签打开学院官网原文。
+   位置与显隐由 js/feed.js 控制：宽度按两侧留白算，面板呼出时整组淡出。 */
+
+.feed-rail {
+  position: fixed;
+  top: 50%;
+  width: var(--rail-w, 210px);
+  padding: 14px 14px 10px;
+  border-radius: 22px;
+  background: rgba(45, 45, 45, 0.28);
+  backdrop-filter: blur(24px) saturate(150%) brightness(1.12);
+  -webkit-backdrop-filter: blur(24px) saturate(150%) brightness(1.12);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 0 32px rgba(0, 0, 0, 0.22);
+  color: var(--white);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-50%) translateX(var(--rail-shift, -10px));
+  transition: opacity 0.5s ease, transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+  z-index: 6;
+  /* 两栏都不可选中：避免拖拽时选中文字 */
+  user-select: none;
+}
+
+.feed-rail--news { left: 26px; --accent: var(--red); }
+.feed-rail--research {
+  right: 26px;
+  --accent: var(--blue);
+  --rail-shift: 10px;
+  transition-delay: 0.08s;
+}
+
+.feed-rail.is-on {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* 面板呼出、放大态、定制浮层、开场遮罩期间整组退场 */
+.feed-rail.is-muted {
+  opacity: 0;
+  transform: translateY(-50%) translateX(var(--rail-shift, -10px));
+  transition-duration: 0.28s;
+}
+
+/* 整块不吃指针（否则会挡住画布拖拽），只有条目和来源链接接收点击 */
+.feed-rail.is-on .feed-rail__item,
+.feed-rail.is-on .feed-rail__src {
+  pointer-events: auto;
+}
+
+/* ---------- 头部：中文名 + 英文小字 + 一道色条 ---------- */
+.feed-rail__head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 2px 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+}
+
+.feed-rail__head::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  bottom: -1px;
+  width: 28px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.feed-rail__zh {
+  font-size: 14px;
+  font-weight: var(--text-medium);
+  letter-spacing: 0.08em;
+}
+
+.feed-rail__en {
+  font-family: var(--text-barlow);
+  font-size: 10px;
+  font-weight: var(--text-heavy);
+  letter-spacing: 0.16em;
+  color: rgba(240, 240, 230, 0.38);
+}
+
+/* ---------- 条目 ---------- */
+.feed-rail__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* 矮屏（<760px）只留两条，避免整栏顶到顶栏 */
+.feed-rail.is-compact .feed-rail__list > li:nth-child(n + 3) { display: none; }
+
+.feed-rail__item {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  pointer-events: none;
+  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.feed-rail__item:hover { transform: translateY(-2px); }
+
+.feed-rail__thumb {
+  display: block;
+  width: 100%;
+  height: clamp(84px, 12vh, 128px);
+  object-fit: cover;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* 没有配图时的占位：同色系渐变，不显示破图图标 */
+.feed-rail__thumb--empty {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    var(--accent);
+  opacity: 0.35;
+}
+
+.feed-rail__title {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(240, 240, 230, 0.9);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: color 0.25s ease;
+}
+
+.feed-rail__item:hover .feed-rail__title { color: var(--white); }
+
+.feed-rail__date {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--text-barlow);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: rgba(240, 240, 230, 0.4);
+}
+
+/* ---------- 脚注：来源 + 更新时间 ---------- */
+.feed-rail__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 10px;
+  color: rgba(240, 240, 230, 0.34);
+}
+
+.feed-rail__src {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.feed-rail__src:hover { color: rgba(240, 240, 230, 0.7); }
+
+.feed-rail__time { font-family: var(--text-barlow); white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .feed-rail,
+  .feed-rail__item { transition: none; }
+}
