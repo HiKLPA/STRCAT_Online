@@ -149,7 +149,7 @@
   color: rgba(240, 240, 230, 0.4);
 }
 
-/* ---------- 脚注：来源 + 更新时间 ---------- */
+/* ---------- 脚注：来源 ---------- */
 .feed-rail__foot {
   display: flex;
   align-items: center;
@@ -172,8 +172,6 @@
 }
 
 .feed-rail__src:hover { color: rgba(240, 240, 230, 0.7); }
-
-.feed-rail__time { font-family: var(--text-barlow); white-space: nowrap; }
 
 @media (prefers-reduced-motion: reduce) {
   .feed-rail,

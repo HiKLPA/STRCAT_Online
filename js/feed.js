@@ -69,7 +69,6 @@ function fmtDate(iso) {
 
 function renderSection(el, section) {
   const list = el.querySelector('.feed-rail__list');
-  const time = el.querySelector('.feed-rail__time');
   if (!list || !section?.items?.length) return false;
 
   list.replaceChildren();
@@ -110,7 +109,6 @@ function renderSection(el, section) {
     list.append(li);
   }
 
-  if (time) time.textContent = fmtDate(section.items[0].date) ? `最新 ${fmtDate(section.items[0].date)}` : '';
   return true;
 }
 
