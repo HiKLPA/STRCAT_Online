@@ -963,22 +963,16 @@
     <div class="opening__hint" id="openingHint"><span>点击任意位置开始</span><span>   </span><span class="opening__hint-en">Click Anywhere to Start</span></div>
   </div>
   <div class="ui">
-    <!-- 吉祥物左右两栏：学院新闻 / 科研动态。只展示标题、日期与原文首图，点击新标签打开学院官网原文；
-         数据由 tools/fetch-sse.mjs 每天生成一次到 data/sse-feed.json，显隐与宽度见 js/feed.js -->
+    <!-- 吉祥物左右两栏：学院新闻 / 科研动态。栏目标题链到对应栏目页，条目只展示标题、日期与原文首图，
+         点击新标签打开学院官网原文；数据由 tools/fetch-sse.mjs 每天生成一次到 data/sse-feed.json，显隐与宽度见 js/feed.js -->
     <aside class="feed-rail feed-rail--news" id="feedNews" aria-label="学院新闻">
-      <p class="feed-rail__head"><span class="feed-rail__zh">学院新闻</span><span class="feed-rail__en">NEWS</span></p>
+      <a class="feed-rail__head" href="https://sse.sysu.edu.cn/news" target="_blank" rel="noopener noreferrer" title="打开学院新闻栏目"><span class="feed-rail__zh">学院新闻</span><span class="feed-rail__en">NEWS</span></a>
       <ul class="feed-rail__list"></ul>
-      <p class="feed-rail__foot">
-        <a class="feed-rail__src" href="https://sse.sysu.edu.cn/news" target="_blank" rel="noopener noreferrer">中山大学软件工程学院</a>
-      </p>
     </aside>
 
     <aside class="feed-rail feed-rail--research" id="feedResearch" aria-label="科研动态">
-      <p class="feed-rail__head"><span class="feed-rail__zh">科研动态</span><span class="feed-rail__en">RESEARCH</span></p>
+      <a class="feed-rail__head" href="https://sse.sysu.edu.cn/research/trends" target="_blank" rel="noopener noreferrer" title="打开科研动态栏目"><span class="feed-rail__zh">科研动态</span><span class="feed-rail__en">RESEARCH</span></a>
       <ul class="feed-rail__list"></ul>
-      <p class="feed-rail__foot">
-        <a class="feed-rail__src" href="https://sse.sysu.edu.cn/research/trends" target="_blank" rel="noopener noreferrer">中山大学软件工程学院</a>
-      </p>
     </aside>
 
     <div class="topbar">

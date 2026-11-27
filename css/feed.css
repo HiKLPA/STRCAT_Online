@@ -7,7 +7,7 @@
   position: fixed;
   top: 50%;
   width: var(--rail-w, 210px);
-  padding: 14px 14px 10px;
+  padding: 14px;
   border-radius: 22px;
   background: rgba(45, 45, 45, 0.28);
   backdrop-filter: blur(24px) saturate(150%) brightness(1.12);
@@ -45,13 +45,13 @@
   transition-duration: 0.28s;
 }
 
-/* 整块不吃指针（否则会挡住画布拖拽），只有条目和来源链接接收点击 */
+/* 整块不吃指针（否则会挡住画布拖拽），只有栏目标题和条目接收点击 */
 .feed-rail.is-on .feed-rail__item,
-.feed-rail.is-on .feed-rail__src {
+.feed-rail.is-on .feed-rail__head {
   pointer-events: auto;
 }
 
-/* ---------- 头部：中文名 + 英文小字 + 一道色条 ---------- */
+/* ---------- 头部：中文名 + 英文小字 + 一道色条（整块链到栏目页） ---------- */
 .feed-rail__head {
   display: flex;
   align-items: baseline;
@@ -60,6 +60,9 @@
   margin-bottom: 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   position: relative;
+  color: inherit;
+  text-decoration: none;
+  pointer-events: none;
 }
 
 .feed-rail__head::after {
@@ -71,7 +74,12 @@
   height: 2px;
   border-radius: 2px;
   background: var(--accent);
+  transition: width 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
+
+/* hover 时色条拉长、英文小字提亮，暗示整块可点 */
+.feed-rail__head:hover::after { width: 56px; }
+.feed-rail__head:hover .feed-rail__en { color: rgba(240, 240, 230, 0.7); }
 
 .feed-rail__zh {
   font-size: 14px;
@@ -149,31 +157,8 @@
   color: rgba(240, 240, 230, 0.4);
 }
 
-/* ---------- 脚注：来源 ---------- */
-.feed-rail__foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  font-size: 10px;
-  color: rgba(240, 240, 230, 0.34);
-}
-
-.feed-rail__src {
-  color: inherit;
-  text-decoration: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.feed-rail__src:hover { color: rgba(240, 240, 230, 0.7); }
-
 @media (prefers-reduced-motion: reduce) {
   .feed-rail,
-  .feed-rail__item { transition: none; }
+  .feed-rail__item,
+  .feed-rail__head::after { transition: none; }
 }
