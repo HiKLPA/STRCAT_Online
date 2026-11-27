@@ -30,6 +30,15 @@ let hasData = false;
 const ITEM_PERSP = 1000;   // 透视距离（px，越小纵深越强）—— 与唱片同值
 const ITEM_SCALE = 1.03;   // hover 放大倍率（比唱片 1.02 略大：卡片只有 196px 宽）
 const ITEM_TILT  = 8;      // 倾斜峰值（deg）—— 与歌单行同值
+/* 时长（s）与弹性周期：只影响这两栏的卡片，唱片（1.2 / 1.0 / 1.0，周期 0.6 / 0.4）与歌单行
+   （0.6 / 0.45 / 0.7）各自的数值不动。
+   elastic.out 是「前段冲、后段晃」的形状，光拉总时长只会拖长尾巴，观感还是很快 —— 周期才是
+   让第一下峰值往后推的旋钮（周期越大，回弹摆得越慢），所以这两栏的周期都比唱片大一档。 */
+const ITEM_ENTER_DUR = 1.0;    // 进入：弹性放大到 ITEM_SCALE
+const ITEM_ENTER_WOBBLE = 0.7; // 进入的弹性周期（越大第一下峰值越晚、回弹越软）
+const ITEM_TILT_DUR = 0.7;     // 跟随：每次改写倾角的时长
+const ITEM_EXIT_DUR = 1.15;    // 归位：弹回原尺寸与水平位
+const ITEM_EXIT_WOBBLE = 0.5;  // 归位的弹性周期
 
 let hoverItem = null;      // 当前吸附的卡片
 let hoverBox = null;       // 它的静止矩形：进入时量一次，指针移动期间不再量（实时 rect 会「跟着走 → 倾角变小 → 回弹」地抖）
@@ -41,7 +50,7 @@ function itemMagnetEnter(item) {
   /* scale: 1 必须显式写：GSAP 首次接管时会从 computed transform 解析当前值当起点，
      之后再写 scale 就是与它相乘 —— 显式声明 1 等于告诉它基准是中性态（唱片面板同款处理）。 */
   gsap.set(item, { transformPerspective: ITEM_PERSP, scale: 1 });
-  gsap.to(item, { scale: ITEM_SCALE, duration: 0.6, ease: 'elastic.out(1, 0.5)', overwrite: 'auto' });
+  gsap.to(item, { scale: ITEM_SCALE, duration: ITEM_ENTER_DUR, ease: `elastic.out(1, ${ITEM_ENTER_WOBBLE})`, overwrite: 'auto' });
 }
 
 /* 弹性归位（有动画）：指针换到别的卡 / 移出栏 */
@@ -49,7 +58,7 @@ function itemMagnetRelease(item) {
   if (!item) return;
   gsap.to(item, {
     rotationX: 0, rotationY: 0, scale: 1,
-    duration: 0.7, ease: 'elastic.out(1, 0.4)', overwrite: 'auto',
+    duration: ITEM_EXIT_DUR, ease: `elastic.out(1, ${ITEM_EXIT_WOBBLE})`, overwrite: 'auto',
   });
 }
 
@@ -80,7 +89,7 @@ function bindMagnet(el) {
     const ny = gsap.utils.clamp(-1, 1, (e.clientY - (hoverBox.top + hoverBox.height / 2)) / (hoverBox.height / 2));
     gsap.to(item, {
       rotationY: -nx * ITEM_TILT, rotationX: ny * ITEM_TILT,
-      duration: 0.45, ease: 'power3.out', overwrite: 'auto',
+      duration: ITEM_TILT_DUR, ease: 'power3.out', overwrite: 'auto',
     });
   });
 
