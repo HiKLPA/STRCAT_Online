@@ -114,8 +114,11 @@ function renderSection(el, section) {
   return true;
 }
 
+let loaded = false;
+
 async function load() {
-  if (!rails.length) return;
+  if (!rails.length || loaded) return;
+  loaded = true;
   try {
     const res = await fetch(FEED_URL, { cache: 'no-cache' });
     if (!res.ok) return;
@@ -148,5 +151,22 @@ window.addEventListener('resize', () => {
   rafId = requestAnimationFrame(() => { rafId = 0; layout(); });
 });
 
+/* 等开场遮罩淡完再拉数据：六张首图约 3.4MB，别和入场动画抢带宽 */
+function start() {
+  const gate = document.getElementById('opening');
+  const ready = () => !gate || getComputedStyle(gate).visibility === 'hidden';
+  if (ready()) {
+    load();
+    return;
+  }
+  const mo = new MutationObserver(() => {
+    if (!ready()) return;
+    mo.disconnect();
+    setTimeout(load, 1200);      // 入场动画约 1.5s，留出收尾
+  });
+  mo.observe(gate, { attributes: true, attributeFilter: ['style', 'class'] });
+  setTimeout(() => { mo.disconnect(); load(); }, 8000);   // 兜底：遮罩异常时也别一直不加载
+}
+
 watch();
-load();
+start();
