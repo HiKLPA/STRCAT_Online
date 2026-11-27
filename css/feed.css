@@ -3,18 +3,12 @@
    只展示标题、日期与原文首图，点击在新标签打开学院官网原文。
    位置与显隐由 js/feed.js 控制：宽度按两侧留白算，面板呼出时整组淡出。 */
 
+/* 定位与显隐留在 .feed-rail 上（居中位移 + 进出场过渡），玻璃壳与磁吸倾斜交给 .feed-rail__shell：
+   磁吸是 GSAP 写 transform，两者必须分层，否则会互相覆盖。 */
 .feed-rail {
   position: fixed;
   top: 50%;
   width: var(--rail-w, 210px);
-  padding: 14px;
-  border-radius: 22px;
-  background: rgba(45, 45, 45, 0.28);
-  backdrop-filter: blur(24px) saturate(150%) brightness(1.12);
-  -webkit-backdrop-filter: blur(24px) saturate(150%) brightness(1.12);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
-    0 0 32px rgba(0, 0, 0, 0.22);
   color: var(--white);
   pointer-events: none;
   opacity: 0;
@@ -23,6 +17,19 @@
   z-index: 6;
   /* 两栏都不可选中：避免拖拽时选中文字 */
   user-select: none;
+}
+
+.feed-rail__shell {
+  padding: 14px;
+  border-radius: 22px;
+  background: rgba(45, 45, 45, 0.28);
+  backdrop-filter: blur(24px) saturate(150%) brightness(1.12);
+  -webkit-backdrop-filter: blur(24px) saturate(150%) brightness(1.12);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+    0 0 32px rgba(0, 0, 0, 0.22);
+  /* 磁吸每帧改 transform：提前提层，避免逐帧重算布局 */
+  will-change: transform;
 }
 
 .feed-rail--news { left: 26px; --accent: var(--red); }
@@ -111,10 +118,7 @@
   text-decoration: none;
   color: inherit;
   pointer-events: none;
-  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
-
-.feed-rail__item:hover { transform: translateY(-2px); }
 
 .feed-rail__thumb {
   display: block;
@@ -143,10 +147,7 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  transition: color 0.25s ease;
 }
-
-.feed-rail__item:hover .feed-rail__title { color: var(--white); }
 
 .feed-rail__date {
   display: block;
@@ -159,6 +160,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   .feed-rail,
-  .feed-rail__item,
   .feed-rail__head::after { transition: none; }
 }

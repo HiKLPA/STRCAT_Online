@@ -3,6 +3,7 @@
    行为：
      · 只有两侧留白够放（不压到字符环）才出现，窗口变窄自动收起；
      · 轮播面板呼出、放大态、定制浮层、开场遮罩期间整组淡出；
+     · 指针进入栏区时整块按唱片面板那套磁吸手感倾斜放大，离开弹性归位；
      · 每条只渲染标题 / 日期 / 原文首图，点击新标签打开学院官网原文。 */
 
 const FEED_URL = './data/sse-feed.json';
@@ -20,6 +21,78 @@ const rails = [
 
 let fitted = false;       // 当前宽度是否放得下
 let hasData = false;
+
+/* ===== 磁吸：复用歌单面板里唱片（.lock-stage）那套手感 =====
+   指针进入栏区 → 先建透视，再 elastic.out 放大到 1.02；指针在栏内的归一化位置（-1 ~ 1）决定绕 Y / X 的
+   倾角（靠近哪一侧，哪一侧朝观察者翘起），整块像被吸向指针；离开 → elastic 归位。
+   倾斜写在 .feed-rail__shell 上，.feed-rail 自己留着居中位移与进出场过渡 —— 两层各写各的 transform，
+   互不覆盖（与唱片面板把倾斜挂在下层 .lock-stage 的做法同源）。
+   识别区用 window 的 pointermove 自测矩形：.feed-rail 是 pointer-events: none（不吃指针才不会挡住画布
+   拖拽），收不到自己的 pointerenter；也只有自测矩形才能让卡片之间的间隙不断磁吸。 */
+const MAGNET_PERSP = 1000;   // 透视距离（px，越小纵深越强）—— 与唱片同值
+const MAGNET_SCALE = 1.02;   // 吸附时放大倍率 —— 与唱片同值
+const MAGNET_TILT  = 5;      // 倾斜峰值（deg）：栏宽只有 210px，5° 已有纵深又不至于晃眼
+const MAGNET_LEAN  = 1.2;    // 固定仰角（deg）：指针停在正中时 nx / ny 都是 0，光靠视差没有倾斜感
+const MAGNET_PAD   = 6;      // 识别区外扩（px）：吃掉放大 2% 溢出矩形的那一圈，免得贴边反复收放
+
+const magnet = rails.map(({ el }) => ({
+  el, shell: el.querySelector('.feed-rail__shell'), engaged: false,
+}));
+const magnetOn = Boolean(window.gsap) && window.matchMedia('(prefers-reduced-motion: reduce)').matches === false;
+
+function magnetEngage(m) {
+  if (!magnetOn || m.engaged || !m.shell) return;
+  m.engaged = true;
+  /* scale: 1 必须显式写：GSAP 首次接管时会从 computed transform 解析当前值当起点，
+     之后再写 scale 就是与它相乘 —— 显式声明 1 等于告诉它基准是中性态（唱片面板同款处理）。 */
+  gsap.set(m.shell, { transformPerspective: MAGNET_PERSP, scale: 1 });
+  gsap.to(m.shell, { scale: MAGNET_SCALE, duration: 1.2, ease: 'elastic.out(1, 0.6)', overwrite: 'auto' });
+}
+
+function magnetRelease(m) {
+  if (!magnetOn || !m.engaged) return;
+  m.engaged = false;
+  gsap.to(m.shell, {
+    rotationX: 0, rotationY: 0, scale: 1,
+    duration: 1.0, ease: 'elastic.out(1, 0.6)', overwrite: 'auto',
+  });
+}
+
+/* 立即归位（不留动画尾巴）：栏要淡出 / 收起时用，之后回到可见态不会残留倾角 */
+function magnetSnap(m) {
+  if (!m.engaged) return;
+  m.engaged = false;
+  gsap.killTweensOf(m.shell);
+  gsap.set(m.shell, { rotationX: 0, rotationY: 0, scale: 1 });
+}
+
+function magnetTrack(e) {
+  if (!magnetOn || e.buttons) return;      // 按住拖动时（画布轨道 / 触屏）不参与，避免抢手感
+  for (const m of magnet) {
+    if (!m.shell) continue;
+    if (!m.el.classList.contains('is-on')) { magnetSnap(m); continue; }   // 已淡出：直接归位
+    const r = m.el.getBoundingClientRect();
+    if (!r.width) continue;
+    if (e.clientX < r.left - MAGNET_PAD || e.clientX > r.right + MAGNET_PAD ||
+        e.clientY < r.top - MAGNET_PAD || e.clientY > r.bottom + MAGNET_PAD) {
+      magnetRelease(m);                    // 出了栏区：弹性归位
+      continue;
+    }
+    if (!m.engaged) magnetEngage(m);       // 进入：建透视 + 弹性放大
+    const nx = gsap.utils.clamp(-1, 1, (e.clientX - (r.left + r.width / 2)) / (r.width / 2));
+    const ny = gsap.utils.clamp(-1, 1, (e.clientY - (r.top + r.height / 2)) / (r.height / 2));
+    gsap.to(m.shell, {
+      rotationY: -nx * MAGNET_TILT, rotationX: ny * MAGNET_TILT + MAGNET_LEAN,
+      duration: 1.0, ease: 'power3.out', overwrite: 'auto',
+    });
+  }
+}
+
+if (magnetOn) {
+  window.addEventListener('pointermove', magnetTrack, { passive: true });
+  /* 指针移出窗口时收不到 pointermove，单独兜一次，免得停在倾斜态 */
+  document.addEventListener('pointerleave', () => magnet.forEach(magnetRelease));
+}
 
 function railWidth() {
   return Math.round(Math.min(230, Math.max(180, window.innerWidth * 0.14)));
@@ -56,6 +129,8 @@ function sync() {
     el.classList.toggle('is-on', fitted && hasData && !hidden);
     el.classList.toggle('is-muted', hidden);
   });
+  /* 淡出 / 收起时把倾斜立即抹平：否则下次露面会带着上一轮的倾角慢慢弹回来 */
+  if (hidden || !fitted) magnet.forEach(magnetSnap);
 }
 
 function fmtDate(iso) {
