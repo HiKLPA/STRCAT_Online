@@ -79,12 +79,7 @@
   height: 2px;
   border-radius: 2px;
   background: var(--accent);
-  transition: width 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
-
-/* hover 时色条拉长、英文小字提亮，暗示整块可点 */
-.feed-rail__head:hover::after { width: 56px; }
-.feed-rail__head:hover .feed-rail__en { color: rgba(240, 240, 230, 0.7); }
 
 .feed-rail__zh {
   font-size: 14px;
@@ -157,6 +152,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .feed-rail,
-  .feed-rail__head::after { transition: none; }
+  .feed-rail { transition: none; }
 }
