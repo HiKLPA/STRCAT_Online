@@ -3276,16 +3276,14 @@
            **再点一次 = 退出**：同一视图已亮着时，普通三枚收回轮播；「定制」那枚退出浮层，且这条是
            「顶栏直接进来」的路径 —— 退出回桌面（enterCustomize(false) 记来源，exitCustomize() 据此定落点）。 */
     menuItems.forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        /* 资讯栏那枚不跳页，分两种点击：
-           · 两栏已在屏 → 是「收起」，交给 js/feed.js 的点击处理（它按 aria-pressed 取反）
-           · 两栏不在屏 → 是「调出来」：先把开着的轮播 / 定制浮层退掉，再按与定制浮层进入同一笔的
-             等待（0.4 退场 + 0.35 余量）把两栏叫回来。stopImmediatePropagation 免得 feed.js
-             那个监听再 toggle 一次，把刚叫出来的又收回去。 */
+      btn.addEventListener('click', () => {
+        /* 资讯栏那枚不跳页，分两种点击（决策只在这一处，js/feed.js 不再监听点击）：
+           · 两栏已在屏 → 收起（rails.collapse）
+           · 两栏不在屏 → 先把开着的轮播 / 定制浮层退掉，再按与定制浮层进入同一笔的等待
+             （0.4 退场 + 0.35 余量）把两栏叫回来。 */
         if (btn.hasAttribute('data-feed-toggle')) {
           const rails = window.feedRails;
-          if (rails && rails.visible()) return;
-          e.stopImmediatePropagation();
+          if (rails && rails.visible()) { rails.collapse(); return; }
           const busy = customizeOpen || carouselOpen;
           if (customizeEnterCall) { customizeEnterCall.kill(); customizeEnterCall = null; }
           if (customizeOpen) { customizeReturnToPanel = false; closeCustomize(); }

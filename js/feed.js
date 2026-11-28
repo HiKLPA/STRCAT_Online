@@ -256,12 +256,13 @@ function setUserOn(on) {
   syncToggle();     // 被面板挡着时保持灭着，等它弹回来再亮
 }
 
+/* 只负责初始点亮状态。点击不在这里处理 —— 那枚按钮既管显隐又要先退掉开着的轮播 / 浮层，
+   决策统一放在 index.html 的快捷入口点击分流（`rails.visible()` → 收起，否则退视图再 reveal），
+   两处各处理一次会互相打架：这里先 toggle 会让那边看到「已不可见」，于是改成立即进入，反成重叠。 */
 function bindToggle() {
   toggleBtn = document.querySelector('[data-feed-toggle]');
   if (!toggleBtn) return;
   syncToggle();
-  /* 按当前点亮状态取反：面板让位导致按钮灭着时，点一下表达的是「我要看」，不是把意愿关掉 */
-  toggleBtn.addEventListener('click', () => setUserOn(toggleBtn.getAttribute('aria-pressed') !== 'true'));
 }
 
 function fmtDate(iso) {
@@ -349,14 +350,17 @@ function watch() {
   new MutationObserver(sync).observe(document.body, { childList: true });
 }
 
-/* 两个定制入口点下去要经过 收回轮播 → 等 0.35s → 弹浮层 这么一段缝，
+/* 两个定制入口点下去要经过 收回轮播 → 等一笔 → 弹浮层 这么一段缝，
    其间 is-open 已经移除、浮层又还没 visible，不拦一下两栏就会弹进来再被推出去。
-   捕获阶段先记时间戳，业务回调里的状态变化照常触发 sync，只是被静默期挡住。 */
+   捕获阶段先记时间戳（静默期），业务回调里的状态变化照常触发 sync，只是被它挡住。
+
+   **不在这里 exitRails**：enterCustomize 需要看到「两栏还在屏」才知道该先请它们退场、
+   再按 0.75 秒的统一起点弹浮层。这里提前退掉会让它判成「本来就没显示」，于是立即弹浮层，
+   与两栏的退场正好重叠 —— 捕获阶段比业务回调更早，必须让状态留给后者去读。 */
 document.addEventListener('click', (e) => {
   if (!e.target.closest || !e.target.closest('[data-customize], #customizeTrigger')) return;
   suppressUntil = performance.now() + SUPPRESS_MS;
   cancelEnter();
-  exitRails();
 }, true);
 
 let rafId = 0;
@@ -395,6 +399,8 @@ function start() {
    所以从顶栏在「定制浮层 / 底部面板 / 资讯栏」之间来回切换时，进入的起点与总时长都一致。 */
 window.feedRails = {
   visible: () => shown,
+  /* 点按钮收起（顶栏入口统一调这个，见 index.html 的快捷入口分流） */
+  collapse: () => setUserOn(false),
   hide: () => {
     /* 这段切换窗口里别再自己弹回来（窗口缩放等触发的 sync 不插队）：
        比 CLOSE_WAIT 多留 0.15，免得定时器到点、浮层还没标成 visible 的那一瞬被 sync 抢进来闪一下 */
