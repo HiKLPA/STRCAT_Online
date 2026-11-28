@@ -120,9 +120,10 @@ const SIDE_STAGGER = 0.08;      // 两栏错峰（= enterSide 的 delay，左栏
 const EASE_OUT = 'cubic-bezier(0.22,1.18,0.36,1)';    // = CustomEase panelOut
 const EASE_IN = 'cubic-bezier(0.64,0,0.78,-0.18)';    // = CustomEase panelIn
 const SQUASH_EASE = 'elastic.out(1, 0.75)';           // = MENU_SETTLE_EASE
-/* 弹回前的等待：底部面板收完要 0.4 + 0.1 错峰，留 0.05 余量；
-   定制浮层滑出 0.4，且从浮层返回时还要先呼出轮播（0.35 后才起），故取 0.5 让两段动画分开 */
-const WAIT = { panel: 0.55, overlay: 0.5, gate: 0.2, default: 0.15 };
+/* 弹回前的等待：底部面板一收尾就跟着回来（0），节奏与定制浮层「点完就动」一致；
+   只有定制浮层要留 0.4 —— 从浮层退回面板时 0.35 秒后会重新呼出轮播，得等它先亮起来，
+   否则两栏会先弹进来再被推出去，闪一下。 */
+const WAIT = { overlay: 0.4 };
 const SUPPRESS_MS = 1200;       // 点「定制 / 自定义」后的静默期：这段时间内一律不弹入
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -256,7 +257,7 @@ function sync() {
     return;
   }
 
-  const wait = WAIT[hideReason] ?? WAIT.default;
+  const wait = WAIT[hideReason] ?? 0;
   if (wait > 0) enterCall = gsap.delayedCall(wait, () => { enterCall = null; enterRails(); });
   else enterRails();
 }
