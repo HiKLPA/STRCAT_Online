@@ -2,8 +2,8 @@
    数据：data/sse-feed.json（tools/fetch-sse.mjs 每天生成，来源中山大学软件工程学院）
    行为：
      · 只有两侧留白够放（不压到字符环）才出现，窗口变窄自动收起；
-     · 进出场复用底部面板那套 squash & stretch，方向由上下换成左右 —— 打开页面时自动从两侧弹入，
-       底部面板呼出、定制浮层打开时向左右弹走，面板收完 / 浮层滑走后再弹回；
+     · 进出场与定制浮层的左右子面板同一套（index.html 的 enterSide / closeCustomize）—— 打开页面时
+       自两侧滑入并撑开，底部面板呼出、定制浮层打开时向左右缩着滑出去，面板收完 / 浮层滑走后再回来；
      · 指针进入某条新闻时，那张卡按唱片那套磁吸手感倾斜放大，移出弹性归位；
      · 每条只渲染标题 / 日期 / 原文首图，点击新标签打开学院官网原文。 */
 
@@ -105,20 +105,21 @@ function bindMagnet(el) {
 
 if (magnetOn) rails.forEach(({ el }) => bindMagnet(el));
 
-/* ===== 进出场：底部面板（.carousel-panel）那套 squash & stretch，方向由上下换成左右 =====
-   底部面板的写法是「位移 / 透明度一条补间，scaleX / scaleY 另一条走弹性、且后者更长」，这里原样照搬：
-   起手把壳横向压到 25%、纵向留 90%，再由 elastic.out 撑回 1；位移走 panelOut（带动画曲线写成
-   cubic-bezier 等价形式，不依赖 CustomEase 是否已经注册过）。收走换成 panelIn 反向，两栏错峰 0.1s。 */
-const ENTER_DUR = 0.5;          // 位移段（= 底部面板 OPEN_DUR）
-const EXIT_DUR = 0.4;           // 收走（= CLOSE_DUR）
-const SQUASH_DUR = 0.9;         // 撑开（= OPEN_SQUASH_DUR：要比位移长，横向展开才看得见）
-const SIDE_STAGGER = 0.1;       // 两栏错峰（左栏先动）
-const SQUASH_X = 0.25;          // 起手横向比例（= OPEN_SQUASH_X）
-const SQUASH_Y = 0.9;           // 起手纵向比例（= OPEN_SQUASH_Y，1 表示纯横向展开）
-const COLLAPSE_SCALE = 0.65;    // 收走位缩放（= 底部面板 SIDE_SCALE）
+/* ===== 进出场：与定制浮层的左右子面板同一套（index.html 的 openCustomize → enterSide / closeCustomize）=====
+   弹入：位移 + 透明度一条补间（45vw → 静止位，panelOut），scaleX / scaleY 另一条走弹性（0.3 / 0.75 → 1，
+   elastic.out(1, 0.75)，比位移略长），两条属性不同，overwrite 只能用 'auto'。
+   退出：与定制面板同源反向，一条补间同拍走完 —— 滑出 45vw + 淡出 + 挤到 0.3 / 0.75，panelIn。
+   transform-origin 落在各自靠屏幕外侧那条边，缩放是「自边缘长出来」，与定制面板的 left/right center 同理。 */
+const SLIDE_RATIO = 0.45;       // 起手 / 退场位移 = 视口宽 × 0.45（= CUSTOM_SLIDE_RATIO）
+const ENTER_DUR   = 0.6;        // 位移 + 淡入（= CUSTOM_ENTER_DUR）
+const SQUASH_DUR  = 0.65;       // 撑开（= MENU_OPEN_DUR）
+const EXIT_DUR    = 0.4;        // 收走（= CUSTOM_LEAVE_DUR）
+const SQUASH_X    = 0.3;        // 起手横向比例（= MENU_SQUEEZE）
+const SQUASH_Y    = 0.75;       // 起手纵向比例（= MENU_SQUASH_Y）
+const SIDE_STAGGER = 0.08;      // 两栏错峰（= enterSide 的 delay，左栏先动）
 const EASE_OUT = 'cubic-bezier(0.22,1.18,0.36,1)';    // = CustomEase panelOut
 const EASE_IN = 'cubic-bezier(0.64,0,0.78,-0.18)';    // = CustomEase panelIn
-const SQUASH_EASE = 'elastic.out(1, 0.8)';            // = OPEN_SQUASH_EASE
+const SQUASH_EASE = 'elastic.out(1, 0.75)';           // = MENU_SETTLE_EASE
 /* 弹回前的等待：底部面板收完要 0.4 + 0.1 错峰，留 0.05 余量；
    定制浮层滑出 0.4，且从浮层返回时还要先呼出轮播（0.35 后才起），故取 0.5 让两段动画分开 */
 const WAIT = { panel: 0.55, overlay: 0.5, gate: 0.2, default: 0.15 };
@@ -133,9 +134,10 @@ let enterTl = null;         // 正在跑的弹入时间线
 let hideReason = 'default'; // 上一次退场的原因：决定弹回要等多久
 let suppressUntil = 0;      // 静默期截止时间（performance.now 基准）
 
-/* 完全飞出视口：半个视口宽加自身宽度，缩放后再小也不露边 */
-function railOut(rail) {
-  return rail.dir * (window.innerWidth / 2 + (rail.el.offsetWidth || railWidth()));
+/* 起手 / 退场的横向位移：定制面板是「内侧贴吉祥物 + 45vw」，这里静止位就在屏幕边缘，
+   位移量取 45vw 即可让整栏连同缩放后的残影一起滑到视口外 */
+function railSlide() {
+  return Math.round(window.innerWidth * SLIDE_RATIO);
 }
 
 function cancelEnter() {
@@ -148,7 +150,7 @@ function enterRails() {
   shown = true;
   if (!window.gsap) { rails.forEach(({ el }) => el.classList.add('is-on')); return; }
   enterTl = gsap.timeline({
-    /* 位移到位（0.5 + 0.1 错峰）就放开命中；后面的弹性撑开只是尺寸还在收尾，不必连点击一起等 */
+    /* 位移到位（0.6 + 0.08 错峰）就放开命中；后面的弹性撑开只是尺寸还在收尾，不必连点击一起等 */
     onComplete: () => { enterTl = null; },
   });
   rails.forEach((rail, i) => {
@@ -156,11 +158,13 @@ function enterRails() {
     if (!shell) return;
     gsap.killTweensOf(shell);
     gsap.set(shell, {
-      x: railOut(rail),
-      scaleX: COLLAPSE_SCALE * SQUASH_X, scaleY: COLLAPSE_SCALE * SQUASH_Y, opacity: 0,
+      x: rail.dir * railSlide(),
+      autoAlpha: 0,
+      scaleX: SQUASH_X, scaleY: SQUASH_Y,
+      transformOrigin: rail.dir < 0 ? 'left center' : 'right center',
     });
     const at = dur(i * SIDE_STAGGER);
-    enterTl.to(shell, { x: 0, opacity: 1, duration: dur(ENTER_DUR), ease: EASE_OUT }, at);
+    enterTl.to(shell, { x: 0, autoAlpha: 1, duration: dur(ENTER_DUR), ease: EASE_OUT }, at);
     enterTl.to(shell, { scaleX: 1, scaleY: 1, duration: dur(SQUASH_DUR), ease: SQUASH_EASE }, at);
   });
   enterTl.call(() => rails.forEach(({ el }) => el.classList.add('is-on')), null, dur(ENTER_DUR + SIDE_STAGGER));
@@ -173,13 +177,14 @@ function exitRails() {
   itemMagnetSnap();
   rails.forEach(({ el }) => el.classList.remove('is-on'));
   if (!window.gsap) return;
-  rails.forEach((rail, i) => {
+  /* 与定制面板一致：两栏同时收，不加错峰 */
+  rails.forEach((rail) => {
     const { shell } = rail;
     if (!shell) return;
     gsap.killTweensOf(shell);
     gsap.to(shell, {
-      x: railOut(rail), scaleX: COLLAPSE_SCALE, scaleY: COLLAPSE_SCALE, opacity: 0,
-      duration: dur(EXIT_DUR), ease: EASE_IN, delay: dur(i * SIDE_STAGGER), overwrite: 'auto',
+      x: rail.dir * railSlide(), autoAlpha: 0, scaleX: SQUASH_X, scaleY: SQUASH_Y,
+      duration: dur(EXIT_DUR), ease: EASE_IN, overwrite: 'auto',
     });
   });
 }
@@ -190,7 +195,10 @@ function parkRails() {
   rails.forEach((rail) => {
     const { shell } = rail;
     if (!shell) return;
-    gsap.set(shell, { x: railOut(rail), scaleX: COLLAPSE_SCALE, scaleY: COLLAPSE_SCALE, opacity: 0 });
+    gsap.set(shell, {
+      x: rail.dir * railSlide(), autoAlpha: 0, scaleX: SQUASH_X, scaleY: SQUASH_Y,
+      transformOrigin: rail.dir < 0 ? 'left center' : 'right center',
+    });
   });
 }
 

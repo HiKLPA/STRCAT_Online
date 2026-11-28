@@ -1,7 +1,7 @@
 /* ===== 吉祥物左右两栏：学院新闻 / 科研动态 =====
    数据来自 data/sse-feed.json（由 tools/fetch-sse.mjs 每天生成一次），
    只展示标题、日期与原文首图，点击在新标签打开学院官网原文。
-   位置与显隐由 js/feed.js 控制：宽度按两侧留白算，面板呼出时整组淡出。 */
+   位置与显隐由 js/feed.js 控制：宽度按两侧留白算，面板呼出时整组缩着滑出去。 */
 
 /* 定位留在 .feed-rail 上（只有一条居中位移），进出场与磁吸全部交给下面两层的 GSAP：
    .feed-rail__shell  —— 弹入弹走（x / scaleX / scaleY / opacity）
@@ -28,7 +28,7 @@
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.14),
     0 0 32px rgba(0, 0, 0, 0.22);
-  /* 起手不可见，弹入时由 js/feed.js 写 opacity（GSAP 写 inline，优先于这条） */
+  /* 起手不可见，弹入时由 js/feed.js 写 autoAlpha（GSAP 写 inline，优先于这条） */
   opacity: 0;
 }
 
