@@ -5493,9 +5493,59 @@
     /* 退出浮层落回哪儿取决于**从哪儿**进来：true = 从「定制」面板的按钮进来 → 回那张面板；
            false = 从顶栏「定制」快捷入口进来 → 没有上一级，退出即回桌面。每次 enterCustomize() 都会重写，别在别处改。 */
     let customizeReturnToPanel = false;
-    const CUSTOM_SLIDE_RATIO = 0.45;   // 滑入/滑出位移 = 视口宽比例
-    const CUSTOM_ENTER_DUR   = 0.6;    // 左右面板滑入时长（横向拉伸另有 MENU_OPEN_DUR 管）
-    const CUSTOM_LEAVE_DUR   = 0.4;    // 滑出时长（与挤窄同拍，收得更干脆）
+    /* ---------- 左右侧栏的进出场：定制浮层的两个子面板与吉祥物两侧的资讯栏共用这一份 ----------
+       位移 / 淡入一条补间（panelOut，0.6s），横向拉伸 + 纵向撑开另一条走弹性（elastic 0.65s）——
+       两条改的属性不同，overwrite 只能用 'auto'。退出是一条补间同拍走完（panelIn，0.4s）。
+       行程由调用方给：定制面板是「内侧 gap + 45vw」→「gap」，资讯栏静止位就在屏幕边缘，故 45vw → 0。
+       transform-origin 落在各自靠屏幕外侧那条边，缩放是「自边缘长出来」。
+       挂到 window 上供 js/feed.js 直接调用，两处不各留一份参数。 */
+    const SIDE_SLIDE_RATIO = 0.45;            // 滑入 / 滑出行程 = 视口宽 × 0.45
+    const SIDE_ENTER_DUR   = 0.6;             // 位移 + 淡入
+    const SIDE_LEAVE_DUR   = 0.4;             // 退出（一条补间同拍）
+    const SIDE_SQUEEZE     = MENU_SQUEEZE;    // 起手 / 收走的横向比例 0.3
+    const SIDE_SQUASH_Y    = MENU_SQUASH_Y;   // 起手 / 收走的纵向比例 0.75
+    const SIDE_SETTLE_DUR  = MENU_OPEN_DUR;   // 弹性撑开时长 0.65
+    const SIDE_SETTLE_EASE = MENU_SETTLE_EASE;
+    const SIDE_ENTER_STAGGER = 0.08;          // 左右错峰（左边先动）
+    /* 减少动态效果：时长压到 0，直接落位（与资讯栏此前在 JS 里做的判断合并到这一处） */
+    const SIDE_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1;
+    const sideDur = (v) => v * SIDE_MOTION;
+
+    /* 进入：先摆到行程起点，再两条补间并跑到行程终点。返回时间线，调用方可挂 onComplete / 整组 kill */
+    function sideEnter(el, dir, from, to, delay = 0) {
+      gsap.set(el, {
+        x: dir * from, autoAlpha: 0, scaleX: SIDE_SQUEEZE, scaleY: SIDE_SQUASH_Y,
+        transformOrigin: dir < 0 ? 'left center' : 'right center',
+      });
+      const tl = gsap.timeline({ delay: sideDur(delay) });
+      tl.to(el, { x: dir * to, autoAlpha: 1, duration: sideDur(SIDE_ENTER_DUR), ease: 'panelOut', overwrite: 'auto' }, 0);
+      tl.to(el, { scaleX: 1, scaleY: 1, duration: sideDur(SIDE_SETTLE_DUR), ease: SIDE_SETTLE_EASE, overwrite: 'auto' }, 0);
+      return tl;
+    }
+
+    /* 退出：滑出 + 淡出 + 挤回 0.3 / 0.75，一条补间同拍走完 */
+    function sideExit(el, dir, from, to, onComplete) {
+      return gsap.to(el, {
+        x: dir * to, autoAlpha: 0, scaleX: SIDE_SQUEEZE, scaleY: SIDE_SQUASH_Y,
+        duration: sideDur(SIDE_LEAVE_DUR), ease: 'panelIn', overwrite: 'auto', onComplete,
+      });
+    }
+
+    /* 收起态（不播动画）：窗口尺寸变化后把还没露面的元素重新摆到行程起点 */
+    function sidePark(el, dir, from) {
+      gsap.set(el, {
+        x: dir * from, autoAlpha: 0, scaleX: SIDE_SQUEEZE, scaleY: SIDE_SQUASH_Y,
+        transformOrigin: dir < 0 ? 'left center' : 'right center',
+      });
+    }
+
+    window.sidePanels = {
+      enter: sideEnter,
+      exit: sideExit,
+      park: sidePark,
+      stagger: SIDE_ENTER_STAGGER,
+      slide: () => window.innerWidth * SIDE_SLIDE_RATIO,
+    };
 
     /* 内侧 gap：紧贴居中吉祥物边缘 + 边距，并确保左右面板不溢出视口 */
     function customGap() {
@@ -5526,17 +5576,11 @@
       controls.autoRotate = false;   // 停转：进入定制面板后画面不再绕圈，吉祥物静止正对屏幕，方便对照调色
       resetView();                   // 并把已经自转转偏的视角平滑转回正视角
       const gap = customGap();
-      const slide = window.innerWidth * CUSTOM_SLIDE_RATIO;
+      const slide = window.sidePanels.slide();
       gsap.set(customizeRoot, { visibility: 'visible' });
-      /* 弹出：复用歌单菜单那套 squash & stretch。位移必须另走一条补间（滑入行程 45vw，弹性会把整片甩飞），
-               故横向拉伸 + 纵向撑开走弹性曲线，位移 / 透明度走 panelOut。两条属性不同，overwrite 只能用 'auto'。 */
-      const enterSide = (el, dir, delay) => {
-        gsap.set(el, { x: dir * (gap + slide), autoAlpha: 0, scaleX: MENU_SQUEEZE, scaleY: MENU_SQUASH_Y });
-        gsap.to(el, { x: dir * gap, autoAlpha: 1, duration: CUSTOM_ENTER_DUR, ease: 'panelOut', overwrite: 'auto', delay });
-        gsap.to(el, { scaleX: 1, scaleY: 1, duration: MENU_OPEN_DUR, ease: MENU_SETTLE_EASE, overwrite: 'auto', delay });
-      };
-      enterSide(customizeL, -1, 0);
-      enterSide(customizeR, 1, 0.08);
+      /* 弹出：走下面那份左右侧栏共用的实现（位移 / 淡入 panelOut + 弹性撑开），左右错峰 */
+      window.sidePanels.enter(customizeL, -1, gap + slide, gap, 0);
+      window.sidePanels.enter(customizeR, 1, gap + slide, gap, window.sidePanels.stagger);
     }
 
     function closeCustomize() {
@@ -5544,17 +5588,10 @@
       customizeOpen = false;
       controls.autoRotate = true;    // 退出定制面板：恢复自动旋转（主界面 / 轮播态的原有观感）
       const gap = customGap();
-      const slide = window.innerWidth * CUSTOM_SLIDE_RATIO;
-      /* 收起：与弹出同源反向 —— 横向挤窄 + 纵向压扁 + 滑出 + 淡出，一条补间同拍走完 （收起时长与位移一致，所以不必像弹出那样拆两条） */
-      gsap.to(customizeL, {
-        x: -(gap + slide), autoAlpha: 0, scaleX: MENU_SQUEEZE, scaleY: MENU_SQUASH_Y,
-        duration: CUSTOM_LEAVE_DUR, ease: 'panelIn', overwrite: true,
-      });
-      gsap.to(customizeR, {
-        x: gap + slide, autoAlpha: 0, scaleX: MENU_SQUEEZE, scaleY: MENU_SQUASH_Y,
-        duration: CUSTOM_LEAVE_DUR, ease: 'panelIn', overwrite: true,
-        onComplete: () => gsap.set(customizeRoot, { visibility: 'hidden' }),
-      });
+      const slide = window.sidePanels.slide();
+      /* 收起：同一份实现的退出分支 —— 挤窄 + 压扁 + 滑出 + 淡出，一条补间同拍走完 */
+      window.sidePanels.exit(customizeL, -1, gap, gap + slide);
+      window.sidePanels.exit(customizeR, 1, gap, gap + slide, () => gsap.set(customizeRoot, { visibility: 'hidden' }));
     }
 
     /* 进入定制流程的统一入口（面板「自定义」按钮与顶栏「定制」共用）：

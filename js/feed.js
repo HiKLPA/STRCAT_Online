@@ -2,8 +2,9 @@
    数据：data/sse-feed.json（tools/fetch-sse.mjs 每天生成，来源中山大学软件工程学院）
    行为：
      · 只有两侧留白够放（不压到字符环）才出现，窗口变窄自动收起；
-     · 进出场与定制浮层的左右子面板同一套（index.html 的 enterSide / closeCustomize）—— 打开页面时
-       自两侧滑入并撑开，底部面板呼出、定制浮层打开时向左右缩着滑出去，面板收完 / 浮层滑走后再回来；
+     · 进出场直接调用定制浮层左右子面板的那份实现（index.html 的 window.sidePanels，同一套函数，
+       不是复制参数）—— 打开页面时自两侧滑入并弹性撑开，底部面板呼出、定制浮层打开时缩着滑出去，
+       面板收完 / 浮层滑走后再回来；
      · 指针进入某条新闻时，那张卡按唱片那套磁吸手感倾斜放大，移出弹性归位；
      · 每条只渲染标题 / 日期 / 原文首图，点击新标签打开学院官网原文。 */
 
@@ -105,72 +106,50 @@ function bindMagnet(el) {
 
 if (magnetOn) rails.forEach(({ el }) => bindMagnet(el));
 
-/* ===== 进出场：与定制浮层的左右子面板同一套（index.html 的 openCustomize → enterSide / closeCustomize）=====
-   弹入：位移 + 透明度一条补间（45vw → 静止位，panelOut），scaleX / scaleY 另一条走弹性（0.3 / 0.75 → 1，
-   elastic.out(1, 0.75)，比位移略长），两条属性不同，overwrite 只能用 'auto'。
-   退出：与定制面板同源反向，一条补间同拍走完 —— 滑出 45vw + 淡出 + 挤到 0.3 / 0.75，panelIn。
-   transform-origin 落在各自靠屏幕外侧那条边，缩放是「自边缘长出来」，与定制面板的 left/right center 同理。 */
-const SLIDE_RATIO = 0.45;       // 起手 / 退场位移 = 视口宽 × 0.45（= CUSTOM_SLIDE_RATIO）
-const ENTER_DUR   = 0.6;        // 位移 + 淡入（= CUSTOM_ENTER_DUR）
-const SQUASH_DUR  = 0.65;       // 撑开（= MENU_OPEN_DUR）
-const EXIT_DUR    = 0.4;        // 收走（= CUSTOM_LEAVE_DUR）
-const SQUASH_X    = 0.3;        // 起手横向比例（= MENU_SQUEEZE）
-const SQUASH_Y    = 0.75;       // 起手纵向比例（= MENU_SQUASH_Y）
-const SIDE_STAGGER = 0.08;      // 两栏错峰（= enterSide 的 delay，左栏先动）
-const EASE_OUT = 'cubic-bezier(0.22,1.18,0.36,1)';    // = CustomEase panelOut
-const EASE_IN = 'cubic-bezier(0.64,0,0.78,-0.18)';    // = CustomEase panelIn
-const SQUASH_EASE = 'elastic.out(1, 0.75)';           // = MENU_SETTLE_EASE
+/* ===== 进出场：直接调用定制浮层那对左右子面板的实现（index.html 的 window.sidePanels）=====
+   行程、时长、曲线、起手比例、错峰都不在这里复制一份：sidePanels.enter / exit / park 就是定制面板
+   用的那几个函数（位移 + 淡入走 panelOut，scaleX / scaleY 走 elastic.out(1, 0.75)，退出一条补间同拍）。
+   这里只决定「从哪到哪」——资讯栏静止位在屏幕边缘，所以是 45vw → 0；定制面板是 gap + 45vw → gap。 */
+const sidePanels = window.sidePanels;
 /* 弹回前的等待：底部面板一收尾就跟着回来（0），节奏与定制浮层「点完就动」一致；
    只有定制浮层要留 0.4 —— 从浮层退回面板时 0.35 秒后会重新呼出轮播，得等它先亮起来，
    否则两栏会先弹进来再被推出去，闪一下。 */
 const WAIT = { overlay: 0.4 };
 const SUPPRESS_MS = 1200;       // 点「定制 / 自定义」后的静默期：这段时间内一律不弹入
 
-const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const dur = (v) => (reduceMotion ? 0 : v);
-
 let shown = false;          // 是否处于显示态（含动画中）
 let enterCall = null;       // 排期中的弹入
-let enterTl = null;         // 正在跑的弹入时间线
+let enterRuns = [];         // 正在跑的入场时间线（每条一列，方便整组掐掉）
 let hideReason = 'default'; // 上一次退场的原因：决定弹回要等多久
 let suppressUntil = 0;      // 静默期截止时间（performance.now 基准）
 let userOn = true;          // 顶栏开关：用户想不想看到这两栏（关掉就一直收起，直到再按一次）
 let toggleBtn = null;       // 顶栏那枚开关按钮
 
-/* 起手 / 退场的横向位移：定制面板是「内侧贴吉祥物 + 45vw」，这里静止位就在屏幕边缘，
-   位移量取 45vw 即可让整栏连同缩放后的残影一起滑到视口外 */
-function railSlide() {
-  return Math.round(window.innerWidth * SLIDE_RATIO);
-}
-
 function cancelEnter() {
   if (enterCall) { enterCall.kill(); enterCall = null; }
-  if (enterTl) { enterTl.kill(); enterTl = null; }
+  enterRuns.forEach((tl) => tl.kill());
+  enterRuns = [];
 }
 
 function enterRails() {
   if (shown || !rails.length) return;
   shown = true;
-  if (!window.gsap) { rails.forEach(({ el }) => el.classList.add('is-on')); return; }
-  enterTl = gsap.timeline({
-    /* 位移到位（0.6 + 0.08 错峰）就放开命中；后面的弹性撑开只是尺寸还在收尾，不必连点击一起等 */
-    onComplete: () => { enterTl = null; },
-  });
+  if (!sidePanels) { rails.forEach(({ el }) => el.classList.add('is-on')); return; }
+  enterRuns = [];
+  const slide = sidePanels.slide();
   rails.forEach((rail, i) => {
-    const { shell } = rail;
-    if (!shell) return;
-    gsap.killTweensOf(shell);
-    gsap.set(shell, {
-      x: rail.dir * railSlide(),
-      autoAlpha: 0,
-      scaleX: SQUASH_X, scaleY: SQUASH_Y,
-      transformOrigin: rail.dir < 0 ? 'left center' : 'right center',
-    });
-    const at = dur(i * SIDE_STAGGER);
-    enterTl.to(shell, { x: 0, autoAlpha: 1, duration: dur(ENTER_DUR), ease: EASE_OUT }, at);
-    enterTl.to(shell, { scaleX: 1, scaleY: 1, duration: dur(SQUASH_DUR), ease: SQUASH_EASE }, at);
+    if (!rail.shell) return;
+    gsap.killTweensOf(rail.shell);
+    enterRuns.push(sidePanels.enter(rail.shell, rail.dir, slide, 0, i * sidePanels.stagger));
   });
-  enterTl.call(() => rails.forEach(({ el }) => el.classList.add('is-on')), null, dur(ENTER_DUR + SIDE_STAGGER));
+  /* 位移落定（0.6 + 0.08 错峰）就放开命中；弹性撑开最后那点尾巴不必连点击一起等 */
+  const last = enterRuns[enterRuns.length - 1];
+  if (last) {
+    last.eventCallback('onComplete', () => {
+      enterRuns = [];
+      rails.forEach(({ el }) => el.classList.add('is-on'));
+    });
+  }
 }
 
 function exitRails() {
@@ -179,29 +158,22 @@ function exitRails() {
   cancelEnter();
   itemMagnetSnap();
   rails.forEach(({ el }) => el.classList.remove('is-on'));
-  if (!window.gsap) return;
+  if (!sidePanels) return;
   /* 与定制面板一致：两栏同时收，不加错峰 */
+  const slide = sidePanels.slide();
   rails.forEach((rail) => {
-    const { shell } = rail;
-    if (!shell) return;
-    gsap.killTweensOf(shell);
-    gsap.to(shell, {
-      x: rail.dir * railSlide(), autoAlpha: 0, scaleX: SQUASH_X, scaleY: SQUASH_Y,
-      duration: dur(EXIT_DUR), ease: EASE_IN, overwrite: 'auto',
-    });
+    if (!rail.shell) return;
+    gsap.killTweensOf(rail.shell);
+    sidePanels.exit(rail.shell, rail.dir, 0, slide);
   });
 }
 
-/* 尺寸变化时把收起态的壳重新摆到屏幕外侧（不播动画）：否则窗口变宽后旧的位移量不够，会露出半截 */
+/* 尺寸变化时把收起态的壳重新摆回行程起点（不播动画）：否则窗口变宽后旧的位移量不够，会露出半截 */
 function parkRails() {
-  if (!window.gsap) return;
+  if (!sidePanels) return;
+  const slide = sidePanels.slide();
   rails.forEach((rail) => {
-    const { shell } = rail;
-    if (!shell) return;
-    gsap.set(shell, {
-      x: rail.dir * railSlide(), autoAlpha: 0, scaleX: SQUASH_X, scaleY: SQUASH_Y,
-      transformOrigin: rail.dir < 0 ? 'left center' : 'right center',
-    });
+    if (rail.shell) sidePanels.park(rail.shell, rail.dir, slide);
   });
 }
 
@@ -244,7 +216,7 @@ function sync() {
     return;
   }
 
-  if (shown || enterCall || enterTl) return;
+  if (shown || enterCall || enterRuns.length) return;
 
   /* 静默期（刚点过定制入口）：到点再重新判断一次，别在这段缝里弹进来 */
   const quiet = suppressUntil - performance.now();
