@@ -98,9 +98,9 @@ cp js/ai-config.example.js js/ai-config.js
 
 吉祥物左右两栏展示学院官网的「学院新闻」与「科研动态」，只保留标题、日期与原文首图，点击在新标签打开原文；栏目标题本身链到对应栏目页。指针进入某一条时，那张卡按唱片面板那套磁吸手感倾斜放大（GSAP perspective + elastic），移出弹性归位，见 `js/feed.js` 的 `bindMagnet`。
 
-两栏的进出场不复制参数，直接调用定制浮层那对左右子面板的同一份实现：`index.html` 把 `sideEnter` / `sideExit` / `sidePark`、行程（45vw）、时长（进场 0.6s、弹性撑开 0.65s、退出 0.4s）、起手比例（30% / 75%）、曲线（panelOut / elastic.out(1, 0.75) / panelIn）与 0.08s 错峰一起挂在 `window.sidePanels` 上，`js/feed.js` 只传「从哪到哪」——资讯栏静止位贴屏幕边缘，所以是 45vw → 0，定制面板是 gap + 45vw → gap。页面打开时自动从两侧滑入；底部面板呼出、定制浮层打开时缩着滑出去，面板收完后等 0.5 秒再弹回，浮层退回面板时等 0.4 秒让轮播先亮起来。点「定制 / 自定义」进浮层的那 1.2 秒里保持静默，避免轮播已收、浮层未开的那段缝隙里闪一下。
+两栏的进出场不复制参数，直接调用定制浮层那对左右子面板的同一份实现：`index.html` 把 `sideEnter` / `sideExit` / `sidePark`、行程（45vw）、时长（进场 0.6s、弹性撑开 0.65s、退出 0.4s）、起手比例（30% / 75%）、曲线（panelOut / elastic.out(1, 0.75) / panelIn）与 0.08s 错峰一起挂在 `window.sidePanels` 上，`js/feed.js` 只传「从哪到哪」——资讯栏静止位贴屏幕边缘，所以是 45vw → 0，定制面板是 gap + 45vw → gap。页面打开时自动从两侧滑入；底部面板呼出、定制浮层打开时缩着滑出去，关掉后等 0.5 秒再弹回（浮层退回面板的路径等 0.4 秒）。顶栏按钮之间的切换另走一笔统一排期（`window.feedRails` 的 `hide` / `reveal`）：资讯栏在屏时点「定制」、或者轮播 / 浮层开着时点「资讯」，都是先让前一视图退场（0.4 秒），再留 0.35 秒余量才开始进入，与 `enterCustomize` 里 `CLOSE_DUR + SIDE_ENTER_AFTER_CLOSE` 同值 —— 两个方向从点击到落定的时长一致。点「定制 / 自定义」进浮层的那 1.2 秒里保持静默，避免轮播已收、浮层未开的那段缝隙里闪一下。
 
-顶栏最左那枚「资讯」按钮是开关兼入口（`data-feed-toggle`，显隐逻辑在 `js/feed.js` 的 `setUserOn`，退出其它视图在 `index.html` 的快捷入口点击分流）：两栏在屏时按下收起、期间不再自动弹回；轮播面板或定制浮层开着时按下，先退掉它（浮层直接关，不按来源把定制面板还回来），等它收完再把两栏调出来。按钮的点亮状态跟着实际显示走（`syncToggle`，`aria-pressed` = 两栏是否在屏上），所以让位退场时它自己会灭，两栏弹回后重新亮起。
+顶栏最左那枚「资讯」按钮是开关兼入口（`data-feed-toggle`，显隐逻辑在 `js/feed.js` 的 `setUserOn`，切换其它视图在 `index.html` 的快捷入口点击分流）：两栏在屏时按下收起、期间不再自动弹回；轮播面板或定制浮层开着时按下，先退掉它（浮层直接关，不按来源把定制面板还回来），再按 0.75 秒的统一起点把两栏调出来。按钮的点亮状态跟着实际显示走（`syncToggle`，`aria-pressed` = 两栏是否在屏上），所以让位退场时它自己会灭，两栏弹回后重新亮起。
 
 数据来自 `https://sse.sysu.edu.cn/news` 与 `/research/trends`。站点没有 RSS 或 JSON 接口，也不发 CORS 头，所以不能在浏览器里直接抓；改为由 `.github/workflows/sse-feed.yml` 每天 07:10（北京时间）跑 `tools/fetch-sse.mjs`，把结果写进 `data/sse-feed.json` 并提交。页面同源读取这份 JSON，不需要任何后端。
 

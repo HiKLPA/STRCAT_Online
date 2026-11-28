@@ -3276,15 +3276,21 @@
            **再点一次 = 退出**：同一视图已亮着时，普通三枚收回轮播；「定制」那枚退出浮层，且这条是
            「顶栏直接进来」的路径 —— 退出回桌面（enterCustomize(false) 记来源，exitCustomize() 据此定落点）。 */
     menuItems.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        /* 资讯栏开关那枚不跳页（切换逻辑在 js/feed.js），但和「定制」同一思路：先把当下开着的视图退掉，
-           再把意愿交给 feed.js 去把两栏调出来。浮层这里必须走 closeCustomize 而不是 exitCustomize ——
-           后者在「从定制面板进来」时会按来源把轮播还回来，两栏又被挡住。
-           正在排期进浮层的（轮播已收、浮层未开）也要掐掉，否则 0.35 秒后它照样弹出来。 */
+      btn.addEventListener('click', (e) => {
+        /* 资讯栏那枚不跳页，分两种点击：
+           · 两栏已在屏 → 是「收起」，交给 js/feed.js 的点击处理（它按 aria-pressed 取反）
+           · 两栏不在屏 → 是「调出来」：先把开着的轮播 / 定制浮层退掉，再按与定制浮层进入同一笔的
+             等待（0.4 退场 + 0.35 余量）把两栏叫回来。stopImmediatePropagation 免得 feed.js
+             那个监听再 toggle 一次，把刚叫出来的又收回去。 */
         if (btn.hasAttribute('data-feed-toggle')) {
+          const rails = window.feedRails;
+          if (rails && rails.visible()) return;
+          e.stopImmediatePropagation();
+          const busy = customizeOpen || carouselOpen;
           if (customizeEnterCall) { customizeEnterCall.kill(); customizeEnterCall = null; }
           if (customizeOpen) { customizeReturnToPanel = false; closeCustomize(); }
           else if (carouselOpen) exitCarousel();
+          if (rails) rails.reveal(busy ? SIDE_LEAVE_DUR + SIDE_ENTER_AFTER_CLOSE : 0);
           return;
         }
         if (btn.hasAttribute('data-customize')) {
@@ -5516,6 +5522,9 @@
     const SIDE_SETTLE_DUR  = MENU_OPEN_DUR;   // 弹性撑开时长 0.65
     const SIDE_SETTLE_EASE = MENU_SETTLE_EASE;
     const SIDE_ENTER_STAGGER = 0.08;          // 左右错峰（左边先动）
+    /* 前一视图收完后留给它退干净的余量：定制浮层从面板进来时用 CLOSE_DUR + 它，
+       资讯栏从面板 / 浮层里被调出来时也用同一笔等待（js/feed.js 读 sidePanels 的值，不另抄一份） */
+    const SIDE_ENTER_AFTER_CLOSE = 0.35;
     /* 减少动态效果：时长压到 0，直接落位（与资讯栏此前在 JS 里做的判断合并到这一处） */
     const SIDE_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1;
     const sideDur = (v) => v * SIDE_MOTION;
@@ -5554,6 +5563,9 @@
       park: sidePark,
       stagger: SIDE_ENTER_STAGGER,
       slide: () => window.innerWidth * SIDE_SLIDE_RATIO,
+      /* 退出要多久 + 退完再留多少余量：调用方（js/feed.js）据此排期，与定制浮层「收完再等 0.35」同节奏 */
+      leaveDur: SIDE_LEAVE_DUR,
+      afterClose: SIDE_ENTER_AFTER_CLOSE,
     };
 
     /* 内侧 gap：紧贴居中吉祥物边缘 + 边距，并确保左右面板不溢出视口 */
@@ -5604,16 +5616,26 @@
     }
 
     /* 进入定制流程的统一入口（面板「自定义」按钮与顶栏「定制」共用）：
-           轮播开着 → 先收回，等吉祥物归位大半再弹浮层；已不在轮播态 → 直接弹出。
+           轮播开着 → 先收回，等吉祥物归位大半再弹浮层；资讯两栏挂着 → 先请它们退场，同样等一笔再弹；
+           桌面上什么都不开 → 直接弹出。
            **入参 backToPanel 决定退出落点**（写进 customizeReturnToPanel）：面板按钮传 true，顶栏传 false。 */
     function enterCustomize(backToPanel) {
       customizeReturnToPanel = !!backToPanel;
       if (customizeOpen) return;
-      if (!carouselOpen) { openCustomize(); return; }
-      if (customizeEnterCall) customizeEnterCall.kill();    // 连点只留最后一次排期，别叠两条
-      exitCarousel();
+      if (customizeEnterCall) { customizeEnterCall.kill(); customizeEnterCall = null; }   // 连点只留最后一次排期
+
+      /* 资讯栏在屏：先退场。等它收完 + 余量再弹浮层，与「浮层开着时点资讯」那侧用同一笔等待，
+         两个方向从顶栏切换的进入时长就一致了（否则这边 0 秒进、那边等 0.75 秒，看着是两个节奏） */
+      const wasCarousel = carouselOpen;
+      if (wasCarousel) exitCarousel();
+      const rails = window.feedRails;
+      const railsOn = !wasCarousel && rails && rails.visible();
+      if (railsOn) rails.hide();
+
+      if (!wasCarousel && !railsOn) { openCustomize(); return; }
+      const hold = (wasCarousel ? CLOSE_DUR : SIDE_LEAVE_DUR) + SIDE_ENTER_AFTER_CLOSE;
       /* 句柄留着：这段时间里若有人把轮播叫回来（点别的面板），openCarousel 会把它 kill 掉 */
-      customizeEnterCall = gsap.delayedCall(CLOSE_DUR + 0.35, () => {
+      customizeEnterCall = gsap.delayedCall(hold, () => {
         customizeEnterCall = null;
         openCustomize();
       });
@@ -5629,7 +5651,7 @@
            · exitCustomize()        —— 决策入口：看 customizeReturnToPanel 决定回面板还是退回桌面
            调用方一律走 exitCustomize()，否则从顶栏进来的那次会弹出用户没去过的面板。 */
     const CUSTOMIZE_PANEL_INDEX = Math.max(0, HINT_TITLES.indexOf('定制'));
-    const CUSTOMIZE_BACK_DELAY  = 0.35;   // 等左右浮层滑出大半再呼出轮播，避免两段动画撞在一起
+    const CUSTOMIZE_BACK_DELAY  = SIDE_ENTER_AFTER_CLOSE;   // 等左右浮层滑出大半再呼出轮播，避免两段动画撞在一起
     function backToCustomizePanel() {
       if (!customizeOpen) return;
       closeCustomize();

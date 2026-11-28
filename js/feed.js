@@ -111,9 +111,9 @@ if (magnetOn) rails.forEach(({ el }) => bindMagnet(el));
    用的那几个函数（位移 + 淡入走 panelOut，scaleX / scaleY 走 elastic.out(1, 0.75)，退出一条补间同拍）。
    这里只决定「从哪到哪」——资讯栏静止位在屏幕边缘，所以是 45vw → 0；定制面板是 gap + 45vw → gap。 */
 const sidePanels = window.sidePanels;
-/* 弹回前的等待：底部面板自身要 0.4 秒才收紧，留 0.5 秒等它落定再让两栏回来，两段动势不叠在一起；
-   定制浮层留 0.4 —— 从浮层退回面板时 0.35 秒后会重新呼出轮播，得等它先亮起来，
-   否则两栏会先弹进来再被推出去，闪一下。开关按钮（default）不等待，按了就回。 */
+/* 自动弹回（面板 / 浮层关掉后，非点击触发）的等待：面板收 0.4，留 0.5 落定；浮层滑走 0.4。
+   顶栏按钮触发的切换不走这里 —— 那条路径用 feedRails.reveal(hold)，与定制浮层的进入排期对齐。 */
+const CLOSE_WAIT = (sidePanels?.leaveDur ?? 0.4) + (sidePanels?.afterClose ?? 0.35);
 const WAIT = { panel: 0.5, overlay: 0.4 };
 const SUPPRESS_MS = 1200;       // 点「定制 / 自定义」后的静默期：这段时间内一律不弹入
 
@@ -387,6 +387,31 @@ function start() {
   mo.observe(gate, { attributes: true, attributeFilter: ['style', 'class'] });
   setTimeout(() => { mo.disconnect(); load(); }, 8000);   // 兜底：遮罩异常时也别一直不加载
 }
+
+/* 供 index.html 的顶栏入口调用，两条路径共用同一笔排期：
+   · hide()   —— 点「定制」时资讯两栏正挂着：请它们退场，等 0.75 秒再开浮层
+   · reveal() —— 点「资讯」时轮播 / 浮层正开着：先退掉它，同样 0.75 秒后把两栏调出来
+   hold 默认 = 前一视图退场时长 + 0.35 余量，与 enterCustomize 的 CLOSE_DUR + SIDE_ENTER_AFTER_CLOSE 同值，
+   所以从顶栏在「定制浮层 / 底部面板 / 资讯栏」之间来回切换时，进入的起点与总时长都一致。 */
+window.feedRails = {
+  visible: () => shown,
+  hide: () => {
+    /* 这段切换窗口里别再自己弹回来（窗口缩放等触发的 sync 不插队）：
+       比 CLOSE_WAIT 多留 0.15，免得定时器到点、浮层还没标成 visible 的那一瞬被 sync 抢进来闪一下 */
+    suppressUntil = Math.max(suppressUntil, performance.now() + (CLOSE_WAIT + 0.15) * 1000);
+    cancelEnter();
+    exitRails();
+  },
+  reveal: (hold = CLOSE_WAIT) => {
+    userOn = true;
+    suppressUntil = 0;
+    cancelEnter();
+    hideReason = 'default';
+    syncToggle();
+    if (!(hold > 0)) { enterRails(); return; }
+    enterCall = gsap.delayedCall(hold, () => { enterCall = null; enterRails(); });
+  },
+};
 
 bindToggle();
 watch();
