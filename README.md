@@ -36,7 +36,7 @@ npx serve .
 | 面板三 定制 | 跳转定制浮层：形态、配色、表情、字符内容、头饰（方凳 / 键盘） |
 | 面板四 锁屏 | 唱片播放器：本地歌单导入、点选、拖拽排序、可拖动进度条，曲名与进度同步到顶栏迷你播放器 |
 | 常驻迷你播放器 | 顶栏居中，内圈白描边走进度，随顶栏一起在放大态退出 |
-| 左右两栏 | 吉祥物两侧：学院新闻 / 科研动态，只显示标题、日期与原文首图，点击跳转学院官网；数据每天 07:10 自动更新，顶栏最左那枚「资讯」按钮可随时收起 / 展开 |
+| 左右两栏 | 吉祥物两侧：学院新闻 / 科研动态，只显示标题、日期与原文首图，点击跳转学院官网；数据来自 `data/sse-feed.json`（自动更新已暂停，需要时手动跑工作流），顶栏最左那枚「资讯」按钮可随时收起 / 展开 |
 
 定制面板改的是同一个 3D 对象：颜色走 `--red` / `--yellow` / `--blue`，头饰换的是 `models/` 下的 GLB。刷新即回到默认形象，不留存档。
 
@@ -60,11 +60,11 @@ js/
   ai-config.example.js  # 上面那份的模板
   feed.js           # 左右两栏：读 data/sse-feed.json 渲染，左右弹入弹走，单卡磁吸
 data/
-  sse-feed.json     # 学院新闻 / 科研动态的最新条目（由 GitHub Actions 每天生成）
+  sse-feed.json     # 学院新闻 / 科研动态的最新条目（由 GitHub Actions 手动触发生成）
 tools/
-  fetch-sse.mjs     # 抓取脚本：2 个列表页 + 最新 6 篇详情，每天一次
+  fetch-sse.mjs     # 抓取脚本：2 个列表页 + 最新 6 篇详情（定时已暂停，按需手动跑）
 .github/workflows/
-  sse-feed.yml      # 每天 07:10（北京时间）跑上面的脚本并提交数据
+  sse-feed.yml      # 只留 workflow_dispatch（手动 Run workflow）；schedule 已注释，去掉注释即恢复每天 07:10
 lib/                # three.js r160 / OrbitControls / GLTFLoader、gsap 3.12.5、CustomEase、ScrollTrigger
 models/             # 头饰模型（Blender 导出）：stool.glb、keyboard.glb
 icon/               # favicon、唱片卡面
@@ -102,7 +102,7 @@ cp js/ai-config.example.js js/ai-config.js
 
 顶栏最左那枚「资讯」按钮是开关兼入口（`data-feed-toggle`，显隐逻辑在 `js/feed.js` 的 `setUserOn`，切换其它视图在 `index.html` 的快捷入口点击分流）：两栏在屏时按下收起、期间不再自动弹回；轮播面板或定制浮层开着时按下，先退掉它（浮层直接关，不按来源把定制面板还回来），再按 0.75 秒的统一起点把两栏调出来。按钮的点亮状态跟着实际显示走（`syncToggle`，`aria-pressed` = 两栏是否在屏上），所以让位退场时它自己会灭，两栏弹回后重新亮起。
 
-数据来自 `https://sse.sysu.edu.cn/news` 与 `/research/trends`。站点没有 RSS 或 JSON 接口，也不发 CORS 头，所以不能在浏览器里直接抓；改为由 `.github/workflows/sse-feed.yml` 每天 07:10（北京时间）跑 `tools/fetch-sse.mjs`，把结果写进 `data/sse-feed.json` 并提交。页面同源读取这份 JSON，不需要任何后端。
+数据来自 `https://sse.sysu.edu.cn/news` 与 `/research/trends`。站点没有 RSS 或 JSON 接口，也不发 CORS 头，所以不能在浏览器里直接抓；改为由 `.github/workflows/sse-feed.yml` 跑 `tools/fetch-sse.mjs`，把结果写进 `data/sse-feed.json` 并提交，页面同源读取这份 JSON，不需要任何后端。定时触发目前是关掉的（`schedule` 一段被注释，只留 `workflow_dispatch`），要更新数据就在 Actions 页面手动 Run workflow，或者 `gh workflow run "Update SSE feed"`；想恢复每天 07:10 自动跑，把那两行注释去掉即可。
 
 手动更新一次：
 
@@ -110,7 +110,7 @@ cp js/ai-config.example.js js/ai-config.js
 node tools/fetch-sse.mjs
 ```
 
-抓取遵守的边界：每天一次、共 8 个请求、间隔 1.2 秒；只取标题、日期、原文链接和正文首图 URL，不下载正文、不转存图片；UA 写明用途，遇 403 / 429 立即停止，不绕过任何访问限制；不抓教师主页、公示名单等含个人信息的页面。内容版权归中山大学软件工程学院，两栏的栏目标题本身链到对应栏目页，每条深链回原文。
+抓取遵守的边界：每天最多一次、每次共 8 个请求、间隔 1.2 秒；只取标题、日期、原文链接和正文首图 URL，不下载正文、不转存图片；UA 写明用途，遇 403 / 429 立即停止，不绕过任何访问限制；不抓教师主页、公示名单等含个人信息的页面。内容版权归中山大学软件工程学院，两栏的栏目标题本身链到对应栏目页，每条深链回原文。
 
 官网更新不频繁（发稿间隔常以周计），所以两栏显示的是「最新 3 条」并标日期，而不是严格的「当日」。
 
