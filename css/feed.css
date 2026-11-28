@@ -20,7 +20,7 @@
 }
 
 .feed-rail__shell {
-  padding: 14px;
+  padding: 16px;
   border-radius: 22px;
   background: rgba(45, 45, 45, 0.28);
   backdrop-filter: blur(24px) saturate(150%) brightness(1.12);
@@ -82,16 +82,16 @@
 }
 
 .feed-rail__zh {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: var(--text-medium);
-  letter-spacing: 0.08em;
+  letter-spacing: normal;
 }
 
 .feed-rail__en {
   font-family: var(--text-barlow);
-  font-size: 10px;
+  font-size: 16px;
   font-weight: var(--text-heavy);
-  letter-spacing: 0.16em;
+  letter-spacing: normal;
   color: rgba(240, 240, 230, 0.38);
 }
 
