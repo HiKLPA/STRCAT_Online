@@ -87,15 +87,18 @@
   .menu-btn svg circle:nth-child(4) { transition-delay: 0.15s; }
   .menu-btn:hover,
   .menu-btn.active,
-  .menu-item:hover {
+  .menu-item:hover,
+  .menu-item--feeds[aria-pressed="true"] {
     color: var(--white);
   }
   /* 补一块与 .lock-player__btn 同款的底盘，让按压缩放有可见承载（仅在 hover / .active 时出现） */
   .menu-btn { border-radius: 50%; }
-  /* hover 与「菜单已展开」（.active）共用同一套底盘：全站统一的 .25 玻璃底 */
+  /* hover 与「菜单已展开」（.active）共用同一套底盘：全站统一的 .25 玻璃底。
+     资讯栏开关「开着」时常驻底盘，读起来是一枚按下的开关，而不是普通入口 */
   .menu-btn:hover::before,
   .menu-btn.active::before,
-  .menu-item:hover::before {
+  .menu-item:hover::before,
+  .menu-item--feeds[aria-pressed="true"]::before {
     background: rgba(45, 45, 45, 0.25);
     backdrop-filter: blur(32px) saturate(160%) brightness(1.15) contrast(1.05);
     -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(1.15) contrast(1.05);

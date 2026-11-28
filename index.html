@@ -1029,6 +1029,15 @@
               </g>
             </svg>
           </button>
+          <button class="menu-item menu-item--feeds" type="button" data-feed-toggle data-label="资讯栏" aria-label="左右资讯栏" aria-pressed="true">
+            <!-- 资讯栏开关：左右两条竖条夹住中间一枚圆点（= 吉祥物两侧的新闻 / 科研两栏）。
+                 按下只切换「要不要显示」，不影响面板呼出时两栏照常让位。图标点亮 = 正在显示 -->
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect fill="currentColor" x="2" y="6" width="4" height="12" rx="1.5"/>
+              <rect fill="currentColor" x="18" y="6" width="4" height="12" rx="1.5"/>
+              <circle fill="currentColor" cx="12" cy="12" r="3.6"/>
+            </svg>
+          </button>
         </div>
         <button class="menu-btn" id="menuBtn" aria-label="菜单">
           <!-- 菜单：四枚同心的圆叠在正中 —— 未呼出时看成一枚完整圆；呼出后各自散到四角并缩小。
@@ -3266,6 +3275,8 @@
            「顶栏直接进来」的路径 —— 退出回桌面（enterCustomize(false) 记来源，exitCustomize() 据此定落点）。 */
     menuItems.forEach((btn) => {
       btn.addEventListener('click', () => {
+        /* 资讯栏开关那枚不跳页：它只切左右两栏的显示，逻辑在 js/feed.js 里，这里直接放过 */
+        if (btn.hasAttribute('data-feed-toggle')) return;
         if (btn.hasAttribute('data-customize')) {
           if (customizeOpen) exitCustomize();
           else enterCustomize(false);

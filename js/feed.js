@@ -133,6 +133,8 @@ let enterCall = null;       // 排期中的弹入
 let enterTl = null;         // 正在跑的弹入时间线
 let hideReason = 'default'; // 上一次退场的原因：决定弹回要等多久
 let suppressUntil = 0;      // 静默期截止时间（performance.now 基准）
+let userOn = true;          // 顶栏开关：用户想不想看到这两栏（关掉就一直收起，直到再按一次）
+let toggleBtn = null;       // 顶栏那枚开关按钮
 
 /* 起手 / 退场的横向位移：定制面板是「内侧贴吉祥物 + 45vw」，这里静止位就在屏幕边缘，
    位移量取 45vw 即可让整栏连同缩放后的残影一起滑到视口外 */
@@ -232,7 +234,7 @@ function hideReasonNow() {
 
 function sync() {
   const reason = hideReasonNow();
-  const visible = fitted && hasData && reason === 'default';
+  const visible = fitted && hasData && userOn && reason === 'default';
 
   if (!visible) {
     if (reason !== 'default') hideReason = reason;
@@ -257,6 +259,25 @@ function sync() {
   const wait = WAIT[hideReason] ?? WAIT.default;
   if (wait > 0) enterCall = gsap.delayedCall(wait, () => { enterCall = null; enterRails(); });
   else enterRails();
+}
+
+/* ===== 顶栏开关：手动收起 / 展开两栏 =====
+   按一下只改「用户想不想看」这一层，其余规则照旧 —— 开着时仍要避开底部面板、定制浮层与开场遮罩，
+   所以按钮管的是意愿而不是当下的可见性：面板呼出时两栏照常让位，按钮保持点亮。
+   关掉要立刻收（连排期中的弹入一起掐掉），再按一次按常规等待重新弹回。 */
+function setUserOn(on) {
+  userOn = !!on;
+  if (toggleBtn) toggleBtn.setAttribute('aria-pressed', String(userOn));
+  if (!userOn) { cancelEnter(); exitRails(); return; }
+  hideReason = 'default';
+  sync();
+}
+
+function bindToggle() {
+  toggleBtn = document.querySelector('[data-feed-toggle]');
+  if (!toggleBtn) return;
+  toggleBtn.setAttribute('aria-pressed', String(userOn));
+  toggleBtn.addEventListener('click', () => setUserOn(!userOn));
 }
 
 function fmtDate(iso) {
@@ -383,5 +404,6 @@ function start() {
   setTimeout(() => { mo.disconnect(); load(); }, 8000);   // 兜底：遮罩异常时也别一直不加载
 }
 
+bindToggle();
 watch();
 start();
