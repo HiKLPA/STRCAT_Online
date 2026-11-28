@@ -58,7 +58,7 @@ js/
   ai-chat.js        # AI 对话：输入框 DOM、两轮 function calling、字符环分段
   ai-config.js      # 本地密钥（不进 git）
   ai-config.example.js  # 上面那份的模板
-  feed.js           # 左右两栏：读 data/sse-feed.json 渲染，按留白显隐
+  feed.js           # 左右两栏：读 data/sse-feed.json 渲染，左右弹入弹走，单卡磁吸
 data/
   sse-feed.json     # 学院新闻 / 科研动态的最新条目（由 GitHub Actions 每天生成）
 tools/
@@ -97,6 +97,8 @@ cp js/ai-config.example.js js/ai-config.js
 ## 学院新闻 / 科研动态
 
 吉祥物左右两栏展示学院官网的「学院新闻」与「科研动态」，只保留标题、日期与原文首图，点击在新标签打开原文；栏目标题本身链到对应栏目页。指针进入某一条时，那张卡按唱片面板那套磁吸手感倾斜放大（GSAP perspective + elastic），移出弹性归位，见 `js/feed.js` 的 `bindMagnet`。
+
+两栏的进场复用底部面板那套 squash & stretch，方向从上下换成左右：位移走 panelOut、起手横向压到 25% 再由 elastic.out 撑开，两栏错峰 0.1 秒。页面打开时自动从两侧弹入；底部面板呼出、定制浮层打开时向左右弹走，面板收完（0.4 + 0.1 秒）或浮层滑走后再弹回。点「定制 / 自定义」进浮层的那 1.2 秒里保持静默，避免轮播已收、浮层未开的那段缝隙里闪一下，见 `js/feed.js` 的 `enterRails` / `exitRails`。
 
 数据来自 `https://sse.sysu.edu.cn/news` 与 `/research/trends`。站点没有 RSS 或 JSON 接口，也不发 CORS 头，所以不能在浏览器里直接抓；改为由 `.github/workflows/sse-feed.yml` 每天 07:10（北京时间）跑 `tools/fetch-sse.mjs`，把结果写进 `data/sse-feed.json` 并提交。页面同源读取这份 JSON，不需要任何后端。
 

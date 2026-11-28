@@ -2,7 +2,8 @@
    数据：data/sse-feed.json（tools/fetch-sse.mjs 每天生成，来源中山大学软件工程学院）
    行为：
      · 只有两侧留白够放（不压到字符环）才出现，窗口变窄自动收起；
-     · 轮播面板呼出、放大态、定制浮层、开场遮罩期间整组淡出；
+     · 进出场复用底部面板那套 squash & stretch，方向由上下换成左右 —— 打开页面时自动从两侧弹入，
+       底部面板呼出、定制浮层打开时向左右弹走，面板收完 / 浮层滑走后再弹回；
      · 指针进入某条新闻时，那张卡按唱片那套磁吸手感倾斜放大，移出弹性归位；
      · 每条只渲染标题 / 日期 / 原文首图，点击新标签打开学院官网原文。 */
 
@@ -14,17 +15,18 @@ const RING_RATIO = 0.966 * 1.08;
 const EDGE = 26;          // 两栏离视口边缘的距离（与 css/feed.css 的 left/right 一致）
 const GAP = 16;           // 栏与字符环之间至少留的空隙
 
+/* dir 决定弹入弹走的方向：左栏去左边、右栏去右边 */
 const rails = [
-  { el: document.getElementById('feedNews'), key: 'news' },
-  { el: document.getElementById('feedResearch'), key: 'research' },
-].filter((r) => r.el);
+  { el: document.getElementById('feedNews'), key: 'news', dir: -1 },
+  { el: document.getElementById('feedResearch'), key: 'research', dir: 1 },
+].filter((r) => r.el).map((r) => ({ ...r, shell: r.el.querySelector('.feed-rail__shell') }));
 
 let fitted = false;       // 当前宽度是否放得下
 let hasData = false;
 
 /* ===== 单条磁吸：复用歌单面板里唱片（.lock-stage）那套手感，作用对象换成每条新闻卡 =====
    指针进入某条 → 先建透视，再 elastic.out 放大到 1.03；指针在这条卡内的归一化位置（-1 ~ 1）决定绕 Y / X 的
-   倾角（靠近哪一侧，哪一侧朝观察者翘起），卡面像被吸向指针；换条 / 移出 / 栏淡出 → 弹性归位。
+   倾角（靠近哪一侧，哪一侧朝观察者翘起），卡面像被吸向指针；换条 / 移出 / 栏退场 → 弹性归位。
    监听挂在 .feed-rail 上靠冒泡（卡片自己有 pointer-events，栏本身没有），与歌单行挂 .lock-player__list 同理；
    卡与卡之间那 14px 间隙命中不到卡片 → 天然的移出，正好和歌单行离开一行的行为一致。 */
 const ITEM_PERSP = 1000;   // 透视距离（px，越小纵深越强）—— 与唱片同值
@@ -62,7 +64,7 @@ function itemMagnetRelease(item) {
   });
 }
 
-/* 立即归位（不留动画尾巴）：栏要淡出 / 收起时用，否则下次露面会带着旧倾角弹回来 */
+/* 立即归位（不留动画尾巴）：栏要退场 / 收起时用，否则下次露面会带着旧倾角弹回来 */
 function itemMagnetSnap() {
   if (!hoverItem) return;
   const item = hoverItem;
@@ -103,6 +105,95 @@ function bindMagnet(el) {
 
 if (magnetOn) rails.forEach(({ el }) => bindMagnet(el));
 
+/* ===== 进出场：底部面板（.carousel-panel）那套 squash & stretch，方向由上下换成左右 =====
+   底部面板的写法是「位移 / 透明度一条补间，scaleX / scaleY 另一条走弹性、且后者更长」，这里原样照搬：
+   起手把壳横向压到 25%、纵向留 90%，再由 elastic.out 撑回 1；位移走 panelOut（带动画曲线写成
+   cubic-bezier 等价形式，不依赖 CustomEase 是否已经注册过）。收走换成 panelIn 反向，两栏错峰 0.1s。 */
+const ENTER_DUR = 0.5;          // 位移段（= 底部面板 OPEN_DUR）
+const EXIT_DUR = 0.4;           // 收走（= CLOSE_DUR）
+const SQUASH_DUR = 0.9;         // 撑开（= OPEN_SQUASH_DUR：要比位移长，横向展开才看得见）
+const SIDE_STAGGER = 0.1;       // 两栏错峰（左栏先动）
+const SQUASH_X = 0.25;          // 起手横向比例（= OPEN_SQUASH_X）
+const SQUASH_Y = 0.9;           // 起手纵向比例（= OPEN_SQUASH_Y，1 表示纯横向展开）
+const COLLAPSE_SCALE = 0.65;    // 收走位缩放（= 底部面板 SIDE_SCALE）
+const EASE_OUT = 'cubic-bezier(0.22,1.18,0.36,1)';    // = CustomEase panelOut
+const EASE_IN = 'cubic-bezier(0.64,0,0.78,-0.18)';    // = CustomEase panelIn
+const SQUASH_EASE = 'elastic.out(1, 0.8)';            // = OPEN_SQUASH_EASE
+/* 弹回前的等待：底部面板收完要 0.4 + 0.1 错峰，留 0.05 余量；
+   定制浮层滑出 0.4，且从浮层返回时还要先呼出轮播（0.35 后才起），故取 0.5 让两段动画分开 */
+const WAIT = { panel: 0.55, overlay: 0.5, gate: 0.2, default: 0.15 };
+const SUPPRESS_MS = 1200;       // 点「定制 / 自定义」后的静默期：这段时间内一律不弹入
+
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const dur = (v) => (reduceMotion ? 0 : v);
+
+let shown = false;          // 是否处于显示态（含动画中）
+let enterCall = null;       // 排期中的弹入
+let enterTl = null;         // 正在跑的弹入时间线
+let hideReason = 'default'; // 上一次退场的原因：决定弹回要等多久
+let suppressUntil = 0;      // 静默期截止时间（performance.now 基准）
+
+/* 完全飞出视口：半个视口宽加自身宽度，缩放后再小也不露边 */
+function railOut(rail) {
+  return rail.dir * (window.innerWidth / 2 + (rail.el.offsetWidth || railWidth()));
+}
+
+function cancelEnter() {
+  if (enterCall) { enterCall.kill(); enterCall = null; }
+  if (enterTl) { enterTl.kill(); enterTl = null; }
+}
+
+function enterRails() {
+  if (shown || !rails.length) return;
+  shown = true;
+  if (!window.gsap) { rails.forEach(({ el }) => el.classList.add('is-on')); return; }
+  enterTl = gsap.timeline({
+    /* 位移到位（0.5 + 0.1 错峰）就放开命中；后面的弹性撑开只是尺寸还在收尾，不必连点击一起等 */
+    onComplete: () => { enterTl = null; },
+  });
+  rails.forEach((rail, i) => {
+    const { shell } = rail;
+    if (!shell) return;
+    gsap.killTweensOf(shell);
+    gsap.set(shell, {
+      x: railOut(rail),
+      scaleX: COLLAPSE_SCALE * SQUASH_X, scaleY: COLLAPSE_SCALE * SQUASH_Y, opacity: 0,
+    });
+    const at = dur(i * SIDE_STAGGER);
+    enterTl.to(shell, { x: 0, opacity: 1, duration: dur(ENTER_DUR), ease: EASE_OUT }, at);
+    enterTl.to(shell, { scaleX: 1, scaleY: 1, duration: dur(SQUASH_DUR), ease: SQUASH_EASE }, at);
+  });
+  enterTl.call(() => rails.forEach(({ el }) => el.classList.add('is-on')), null, dur(ENTER_DUR + SIDE_STAGGER));
+}
+
+function exitRails() {
+  if (!shown) return;
+  shown = false;
+  cancelEnter();
+  itemMagnetSnap();
+  rails.forEach(({ el }) => el.classList.remove('is-on'));
+  if (!window.gsap) return;
+  rails.forEach((rail, i) => {
+    const { shell } = rail;
+    if (!shell) return;
+    gsap.killTweensOf(shell);
+    gsap.to(shell, {
+      x: railOut(rail), scaleX: COLLAPSE_SCALE, scaleY: COLLAPSE_SCALE, opacity: 0,
+      duration: dur(EXIT_DUR), ease: EASE_IN, delay: dur(i * SIDE_STAGGER), overwrite: 'auto',
+    });
+  });
+}
+
+/* 尺寸变化时把收起态的壳重新摆到屏幕外侧（不播动画）：否则窗口变宽后旧的位移量不够，会露出半截 */
+function parkRails() {
+  if (!window.gsap) return;
+  rails.forEach((rail) => {
+    const { shell } = rail;
+    if (!shell) return;
+    gsap.set(shell, { x: railOut(rail), scaleX: COLLAPSE_SCALE, scaleY: COLLAPSE_SCALE, opacity: 0 });
+  });
+}
+
 function railWidth() {
   return Math.round(Math.min(230, Math.max(180, window.innerWidth * 0.14)));
 }
@@ -120,26 +211,44 @@ function layout() {
   sync();
 }
 
-function muted() {
+/* 当前该退场的原因：底部面板（含放大态）> 定制浮层 > 开场遮罩；都没有就返回 default */
+function hideReasonNow() {
   const carousel = document.querySelector('.carousel');
+  if (carousel && (carousel.classList.contains('is-open') || carousel.classList.contains('is-expanded'))) return 'panel';
   const customize = document.getElementById('customize');
+  if (customize && getComputedStyle(customize).visibility === 'visible') return 'overlay';
   const gate = document.getElementById('opening');
-  return Boolean(
-    (gate && getComputedStyle(gate).visibility !== 'hidden') ||      // 开场视频还盖着
-    carousel?.classList.contains('is-open') ||
-    carousel?.classList.contains('is-expanded') ||
-    (customize && getComputedStyle(customize).visibility === 'visible')
-  );
+  if (gate && getComputedStyle(gate).visibility !== 'hidden') return 'gate';
+  return 'default';
 }
 
 function sync() {
-  const hidden = muted();
-  rails.forEach(({ el }) => {
-    el.classList.toggle('is-on', fitted && hasData && !hidden);
-    el.classList.toggle('is-muted', hidden);
-  });
-  /* 淡出 / 收起时把卡片的倾斜立即抹平：否则下次露面会带着上一轮的倾角慢慢弹回来 */
-  if (hidden || !fitted) itemMagnetSnap();
+  const reason = hideReasonNow();
+  const visible = fitted && hasData && reason === 'default';
+
+  if (!visible) {
+    if (reason !== 'default') hideReason = reason;
+    cancelEnter();      // 排期中的弹入也要掐掉，否则退场后它还会自己弹进来
+    exitRails();
+    return;
+  }
+
+  if (shown || enterCall || enterTl) return;
+
+  /* 静默期（刚点过定制入口）：到点再重新判断一次，别在这段缝里弹进来 */
+  const quiet = suppressUntil - performance.now();
+  if (quiet > 0) {
+    enterCall = gsap.delayedCall(quiet / 1000, () => {
+      enterCall = null;
+      hideReason = 'default';
+      sync();
+    });
+    return;
+  }
+
+  const wait = WAIT[hideReason] ?? WAIT.default;
+  if (wait > 0) enterCall = gsap.delayedCall(wait, () => { enterCall = null; enterRails(); });
+  else enterRails();
 }
 
 function fmtDate(iso) {
@@ -227,10 +336,24 @@ function watch() {
   new MutationObserver(sync).observe(document.body, { childList: true });
 }
 
+/* 两个定制入口点下去要经过 收回轮播 → 等 0.35s → 弹浮层 这么一段缝，
+   其间 is-open 已经移除、浮层又还没 visible，不拦一下两栏就会弹进来再被推出去。
+   捕获阶段先记时间戳，业务回调里的状态变化照常触发 sync，只是被静默期挡住。 */
+document.addEventListener('click', (e) => {
+  if (!e.target.closest || !e.target.closest('[data-customize], #customizeTrigger')) return;
+  suppressUntil = performance.now() + SUPPRESS_MS;
+  cancelEnter();
+  exitRails();
+}, true);
+
 let rafId = 0;
 window.addEventListener('resize', () => {
   if (rafId) return;
-  rafId = requestAnimationFrame(() => { rafId = 0; layout(); });
+  rafId = requestAnimationFrame(() => {
+    rafId = 0;
+    layout();
+    if (!shown && !enterCall) parkRails();
+  });
 });
 
 /* 等开场遮罩淡完再拉数据：六张首图约 3.4MB，别和入场动画抢带宽 */
@@ -238,13 +361,15 @@ function start() {
   const gate = document.getElementById('opening');
   const ready = () => !gate || getComputedStyle(gate).visibility === 'hidden';
   if (ready()) {
+    parkRails();
     load();
     return;
   }
+  parkRails();
   const mo = new MutationObserver(() => {
     if (!ready()) return;
     mo.disconnect();
-    setTimeout(load, 1200);      // 入场动画约 1.5s，留出收尾
+    setTimeout(load, 900);       // 入场动画约 1.5s，留出收尾再弹入
   });
   mo.observe(gate, { attributes: true, attributeFilter: ['style', 'class'] });
   setTimeout(() => { mo.disconnect(); load(); }, 8000);   // 兜底：遮罩异常时也别一直不加载

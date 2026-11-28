@@ -3,17 +3,17 @@
    只展示标题、日期与原文首图，点击在新标签打开学院官网原文。
    位置与显隐由 js/feed.js 控制：宽度按两侧留白算，面板呼出时整组淡出。 */
 
-/* 定位与显隐留在 .feed-rail 上（居中位移 + 进出场过渡），玻璃壳与磁吸倾斜交给 .feed-rail__shell：
-   磁吸是 GSAP 写 transform，两者必须分层，否则会互相覆盖。 */
+/* 定位留在 .feed-rail 上（只有一条居中位移），进出场与磁吸全部交给下面两层的 GSAP：
+   .feed-rail__shell  —— 弹入弹走（x / scaleX / scaleY / opacity）
+   .feed-rail__item   —— 单条磁吸倾斜
+   三者必须分层，各自写自己的 transform，否则后写的会整段覆盖前一段。 */
 .feed-rail {
   position: fixed;
   top: 50%;
   width: var(--rail-w, 210px);
   color: var(--white);
   pointer-events: none;
-  opacity: 0;
-  transform: translateY(-50%) translateX(var(--rail-shift, -10px));
-  transition: opacity 0.5s ease, transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transform: translateY(-50%);
   z-index: 6;
   /* 两栏都不可选中：避免拖拽时选中文字 */
   user-select: none;
@@ -28,27 +28,15 @@
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.14),
     0 0 32px rgba(0, 0, 0, 0.22);
+  /* 起手不可见，弹入时由 js/feed.js 写 opacity（GSAP 写 inline，优先于这条） */
+  opacity: 0;
 }
 
 .feed-rail--news { left: 26px; --accent: var(--red); }
-.feed-rail--research {
-  right: 26px;
-  --accent: var(--blue);
-  --rail-shift: 10px;
-  transition-delay: 0.08s;
-}
+.feed-rail--research { right: 26px; --accent: var(--blue); }
 
-.feed-rail.is-on {
-  opacity: 1;
-  transform: translateY(-50%) translateX(0);
-}
-
-/* 面板呼出、放大态、定制浮层、开场遮罩期间整组退场 */
-.feed-rail.is-muted {
-  opacity: 0;
-  transform: translateY(-50%) translateX(var(--rail-shift, -10px));
-  transition-duration: 0.28s;
-}
+/* 无 GSAP 时的兜底：只保证能看见，动效由 JS 负责 */
+.feed-rail.is-on .feed-rail__shell { opacity: 1; }
 
 /* 整块不吃指针（否则会挡住画布拖拽），只有栏目标题和条目接收点击 */
 .feed-rail.is-on .feed-rail__item,
@@ -151,6 +139,4 @@
   color: rgba(240, 240, 230, 0.4);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .feed-rail { transition: none; }
-}
+/* 减少动态效果时不出弹入弹走：js/feed.js 把时长压到 0，这里不需要再改 */
