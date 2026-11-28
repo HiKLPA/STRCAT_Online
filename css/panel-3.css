@@ -30,13 +30,14 @@
     white-space: nowrap;
   }
   /* 标题右侧单行英文（不换行；颜色取 --dim，与衍生面板的 MERCHANDISE 同色）
-     底部与「定制」的字形底边齐平：flex-end 只对盒底，96px 汉字的行框比 24px 英文深一大截，
-     盒底对齐时字形仍低 7px，故用 margin-bottom 抬 19px 抵消（1:1 实测，随面板缩放等比） */
+     底部与「定制」的字形底边齐平：flex-end 只对盒底，96px 汉字的行框比英文深一大截，
+     盒底对齐时英文字形仍会低一点，用 margin-bottom 抵消（1:1 实测）。
+     值随字号等比走：24px 时 19px，28px 时约 20px */
   .panel-join__en {
     flex: none;
-    margin-bottom: 19px;
+    margin-bottom: 20px;
     font-family: var(--text-barlow);
-    font-size: 24px;
+    font-size: 28px;
     font-weight: 500;
     color: var(--dim);
     white-space: nowrap;
