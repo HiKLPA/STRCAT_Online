@@ -989,10 +989,20 @@
 
       <div class="menu-group">
         <div class="menu-items">
-          <!-- 四个页面快捷入口：纯图标；hover 时按钮下方浮出面板名（样式见 css/topbar.css 的 .menu-item::after）。
+          <!-- 五个快捷入口（前四枚是页面，最左一枚是开关）：纯图标；hover 时按钮下方浮出名字（样式见 css/topbar.css 的 .menu-item::after）。
                          data-panel 写「内容名」而非数字索引，由 JS 拿 HINT_TITLES.indexOf 解析 —— 面板顺序调整时不会指错页。
                          data-label 供 CSS attr() 取用，刻意不复用 aria-label，免得将来无障碍名称变长连画面标签一起变。
-                         第三枚带 data-customize —— 不跳页面，直接弹出左右两个定制子面板。 -->
+                         第三枚带 data-customize —— 不跳页面，直接弹出左右两个定制子面板。
+                         首枚带 data-feed-toggle —— 只切吉祥物两侧的资讯栏显示与否，不跳页（逻辑在 js/feed.js）。 -->
+          <button class="menu-item menu-item--feeds" type="button" data-feed-toggle data-label="资讯" aria-label="资讯栏" aria-pressed="true">
+            <!-- 资讯栏开关：左右两条竖条夹住中间一枚圆点（= 吉祥物两侧的新闻 / 科研两栏）。
+                 按下只切换「要不要显示」，不影响面板呼出时两栏照常让位。图标点亮 = 正在显示 -->
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect fill="currentColor" x="2" y="6" width="4" height="12" rx="1.5"/>
+              <rect fill="currentColor" x="18" y="6" width="4" height="12" rx="1.5"/>
+              <circle fill="currentColor" cx="12" cy="12" r="3.6"/>
+            </svg>
+          </button>
           <button class="menu-item" type="button" data-panel="介绍" data-label="介绍" aria-label="介绍">
             <!-- 简介：一页文档（evenodd 外框挖空 + 两条文字行）—— 第一面板就是形象简介页 -->
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1027,15 +1037,6 @@
                 <path fill="currentColor" d="M17 4.5H20.75A1.25 1.25 0 0 1 20.75 7H17Z"/>
                 <circle fill="currentColor" cx="13.25" cy="15.75" r="3.75"/>
               </g>
-            </svg>
-          </button>
-          <button class="menu-item menu-item--feeds" type="button" data-feed-toggle data-label="资讯栏" aria-label="左右资讯栏" aria-pressed="true">
-            <!-- 资讯栏开关：左右两条竖条夹住中间一枚圆点（= 吉祥物两侧的新闻 / 科研两栏）。
-                 按下只切换「要不要显示」，不影响面板呼出时两栏照常让位。图标点亮 = 正在显示 -->
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <rect fill="currentColor" x="2" y="6" width="4" height="12" rx="1.5"/>
-              <rect fill="currentColor" x="18" y="6" width="4" height="12" rx="1.5"/>
-              <circle fill="currentColor" cx="12" cy="12" r="3.6"/>
             </svg>
           </button>
         </div>
