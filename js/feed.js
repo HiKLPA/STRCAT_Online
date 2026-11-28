@@ -131,9 +131,16 @@ function cancelEnter() {
   enterRuns = [];
 }
 
+/* 顶栏那枚按钮的点亮状态 = 两栏此刻是否真在屏上：
+   弹入时亮，退出（不论是自己关掉，还是给底部面板 / 定制浮层让位）时立刻灭，弹回后再自动亮起来 */
+function syncToggle() {
+  if (toggleBtn) toggleBtn.setAttribute('aria-pressed', String(shown));
+}
+
 function enterRails() {
   if (shown || !rails.length) return;
   shown = true;
+  syncToggle();
   if (!sidePanels) { rails.forEach(({ el }) => el.classList.add('is-on')); return; }
   enterRuns = [];
   const slide = sidePanels.slide();
@@ -155,6 +162,7 @@ function enterRails() {
 function exitRails() {
   if (!shown) return;
   shown = false;
+  syncToggle();
   cancelEnter();
   itemMagnetSnap();
   rails.forEach(({ el }) => el.classList.remove('is-on'));
@@ -235,22 +243,22 @@ function sync() {
 }
 
 /* ===== 顶栏开关：手动收起 / 展开两栏 =====
-   按一下只改「用户想不想看」这一层，其余规则照旧 —— 开着时仍要避开底部面板、定制浮层与开场遮罩，
-   所以按钮管的是意愿而不是当下的可见性：面板呼出时两栏照常让位，按钮保持点亮。
+   按一下改「用户想不想看」；按钮点亮与否跟着实际显示走（见 syncToggle），所以面板让位收起时它自己会灭。
    关掉要立刻收（连排期中的弹入一起掐掉），再按一次按常规等待重新弹回。 */
 function setUserOn(on) {
   userOn = !!on;
-  if (toggleBtn) toggleBtn.setAttribute('aria-pressed', String(userOn));
-  if (!userOn) { cancelEnter(); exitRails(); return; }
+  if (!userOn) { cancelEnter(); exitRails(); syncToggle(); return; }
   hideReason = 'default';
   sync();
+  syncToggle();     // 被面板挡着时保持灭着，等它弹回来再亮
 }
 
 function bindToggle() {
   toggleBtn = document.querySelector('[data-feed-toggle]');
   if (!toggleBtn) return;
-  toggleBtn.setAttribute('aria-pressed', String(userOn));
-  toggleBtn.addEventListener('click', () => setUserOn(!userOn));
+  syncToggle();
+  /* 按当前点亮状态取反：面板让位导致按钮灭着时，点一下表达的是「我要看」，不是把意愿关掉 */
+  toggleBtn.addEventListener('click', () => setUserOn(toggleBtn.getAttribute('aria-pressed') !== 'true'));
 }
 
 function fmtDate(iso) {
