@@ -993,10 +993,11 @@
                          data-panel 写「内容名」而非数字索引，由 JS 拿 HINT_TITLES.indexOf 解析 —— 面板顺序调整时不会指错页。
                          data-label 供 CSS attr() 取用，刻意不复用 aria-label，免得将来无障碍名称变长连画面标签一起变。
                          第三枚带 data-customize —— 不跳页面，直接弹出左右两个定制子面板。
-                         首枚带 data-feed-toggle —— 只切吉祥物两侧的资讯栏显示与否，不跳页（逻辑在 js/feed.js）。 -->
+                         首枚带 data-feed-toggle —— 切吉祥物两侧的资讯栏（逻辑在 js/feed.js）；点击时若轮播或
+                         定制浮层开着，先退掉它再让两栏回来，与「定制」那枚的进退思路一致。 -->
           <button class="menu-item menu-item--feeds" type="button" data-feed-toggle data-label="资讯" aria-label="资讯栏" aria-pressed="true">
             <!-- 资讯栏开关：左右两条竖条夹住中间一枚圆点（= 吉祥物两侧的新闻 / 科研两栏）。
-                 按下只切换「要不要显示」，不影响面板呼出时两栏照常让位。图标点亮 = 正在显示 -->
+                 按下切换「要不要显示」；图标点亮 = 两栏此刻真在屏上（让位收起时自动熄灭） -->
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <rect fill="currentColor" x="2" y="6" width="4" height="12" rx="1.5"/>
               <rect fill="currentColor" x="18" y="6" width="4" height="12" rx="1.5"/>
@@ -3276,8 +3277,16 @@
            「顶栏直接进来」的路径 —— 退出回桌面（enterCustomize(false) 记来源，exitCustomize() 据此定落点）。 */
     menuItems.forEach((btn) => {
       btn.addEventListener('click', () => {
-        /* 资讯栏开关那枚不跳页：它只切左右两栏的显示，逻辑在 js/feed.js 里，这里直接放过 */
-        if (btn.hasAttribute('data-feed-toggle')) return;
+        /* 资讯栏开关那枚不跳页（切换逻辑在 js/feed.js），但和「定制」同一思路：先把当下开着的视图退掉，
+           再把意愿交给 feed.js 去把两栏调出来。浮层这里必须走 closeCustomize 而不是 exitCustomize ——
+           后者在「从定制面板进来」时会按来源把轮播还回来，两栏又被挡住。
+           正在排期进浮层的（轮播已收、浮层未开）也要掐掉，否则 0.35 秒后它照样弹出来。 */
+        if (btn.hasAttribute('data-feed-toggle')) {
+          if (customizeEnterCall) { customizeEnterCall.kill(); customizeEnterCall = null; }
+          if (customizeOpen) { customizeReturnToPanel = false; closeCustomize(); }
+          else if (carouselOpen) exitCarousel();
+          return;
+        }
         if (btn.hasAttribute('data-customize')) {
           if (customizeOpen) exitCustomize();
           else enterCustomize(false);

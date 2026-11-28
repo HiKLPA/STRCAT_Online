@@ -100,7 +100,7 @@ cp js/ai-config.example.js js/ai-config.js
 
 两栏的进出场不复制参数，直接调用定制浮层那对左右子面板的同一份实现：`index.html` 把 `sideEnter` / `sideExit` / `sidePark`、行程（45vw）、时长（进场 0.6s、弹性撑开 0.65s、退出 0.4s）、起手比例（30% / 75%）、曲线（panelOut / elastic.out(1, 0.75) / panelIn）与 0.08s 错峰一起挂在 `window.sidePanels` 上，`js/feed.js` 只传「从哪到哪」——资讯栏静止位贴屏幕边缘，所以是 45vw → 0，定制面板是 gap + 45vw → gap。页面打开时自动从两侧滑入；底部面板呼出、定制浮层打开时缩着滑出去，面板收完后等 0.5 秒再弹回，浮层退回面板时等 0.4 秒让轮播先亮起来。点「定制 / 自定义」进浮层的那 1.2 秒里保持静默，避免轮播已收、浮层未开的那段缝隙里闪一下。
 
-顶栏最左那枚「资讯」按钮是手动开关（`data-feed-toggle`，逻辑在 `js/feed.js` 的 `setUserOn`）：关掉后两栏立刻收起、期间不再自动弹回，再按一次恢复。按钮的点亮状态跟着实际显示走（`syncToggle`，`aria-pressed` = 两栏是否在屏上），所以底部面板呼出、定制浮层打开让两栏退场时它自己会灭，两栏弹回后重新亮起。面板开着时按这枚按钮仍能调出两栏（临时放行 `forced`，z 序在面板之上），等面板关掉、让位原因消失后这次放行自动作废。
+顶栏最左那枚「资讯」按钮是开关兼入口（`data-feed-toggle`，显隐逻辑在 `js/feed.js` 的 `setUserOn`，退出其它视图在 `index.html` 的快捷入口点击分流）：两栏在屏时按下收起、期间不再自动弹回；轮播面板或定制浮层开着时按下，先退掉它（浮层直接关，不按来源把定制面板还回来），等它收完再把两栏调出来。按钮的点亮状态跟着实际显示走（`syncToggle`，`aria-pressed` = 两栏是否在屏上），所以让位退场时它自己会灭，两栏弹回后重新亮起。
 
 数据来自 `https://sse.sysu.edu.cn/news` 与 `/research/trends`。站点没有 RSS 或 JSON 接口，也不发 CORS 头，所以不能在浏览器里直接抓；改为由 `.github/workflows/sse-feed.yml` 每天 07:10（北京时间）跑 `tools/fetch-sse.mjs`，把结果写进 `data/sse-feed.json` 并提交。页面同源读取这份 JSON，不需要任何后端。
 

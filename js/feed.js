@@ -123,7 +123,6 @@ let enterRuns = [];         // 正在跑的入场时间线（每条一列，方�
 let hideReason = 'default'; // 上一次退场的原因：决定弹回要等多久
 let suppressUntil = 0;      // 静默期截止时间（performance.now 基准）
 let userOn = true;          // 顶栏开关：用户想不想看到这两栏（关掉就一直收起，直到再按一次）
-let forced = false;         // 面板 / 浮层挡着时，用户手动点开的临时放行（让位原因消失即作废）
 let toggleBtn = null;       // 顶栏那枚开关按钮
 
 function cancelEnter() {
@@ -141,6 +140,7 @@ function syncToggle() {
 function enterRails() {
   if (shown || !rails.length) return;
   shown = true;
+  hideReason = 'default';   // 上一次退场的原因已经用掉，下次手动开关不必再等
   syncToggle();
   if (!sidePanels) { rails.forEach(({ el }) => el.classList.add('is-on')); return; }
   enterRuns = [];
@@ -216,11 +216,7 @@ function hideReasonNow() {
 
 function sync() {
   const reason = hideReasonNow();
-  /* 让位的原因一消失，临时放行就作废：下次面板呼出仍按默认规则让位 */
-  if (reason === 'default') forced = false;
-  /* 只对底部面板放行：定制浮层的 z 序是 16，盖在两栏（6）之上，弹出来也看不见 */
-  const forcedOn = forced && reason === 'panel';
-  const visible = fitted && hasData && userOn && (reason === 'default' || forcedOn);
+  const visible = fitted && hasData && userOn && reason === 'default';
 
   if (!visible) {
     if (reason !== 'default') hideReason = reason;
@@ -249,16 +245,15 @@ function sync() {
 
 /* ===== 顶栏开关：手动收起 / 展开两栏 =====
    按一下改「用户想不想看」；按钮点亮与否跟着实际显示走（见 syncToggle），所以面板让位收起时它自己会灭。
-   关掉要立刻收（连排期中的弹入一起掐掉）。再按一次时如果正被底部面板挡着，就临时放行（forced）——
-   面板开着也照样弹出来，压在面板之上（两栏 z 6 > 面板 z 5）；等面板关掉、让位原因消失，这次放行自动作废。
-   定制浮层的 z 序是 16，盖在两栏之上，所以那一层不放行。 */
+   关掉要立刻收（连排期中的弹入一起掐掉），再按一次按常规等待重新弹回。 */
 function setUserOn(on) {
   userOn = !!on;
-  if (!userOn) { forced = false; cancelEnter(); exitRails(); syncToggle(); return; }
-  hideReason = 'default';     // 手动要它回来就不必再等面板收尾的那 0.5 秒
-  if (enterCall) { enterCall.kill(); enterCall = null; }   // 顺手掐掉排期中的弹回，免得这枚「立刻回」被 wait 抵掉
+  if (!userOn) { cancelEnter(); exitRails(); syncToggle(); return; }
+  /* 明确按了按钮就不再等静默期；但上一次退场的等待（面板 0.5 / 浮层 0.4）要保留 ——
+     从面板或浮层里按这枚按钮时，视图正在收尾，两栏跟着它的节奏回来才不会撞在一起 */
+  suppressUntil = 0;
   sync();
-  syncToggle();               // 真的弹出来了才亮；被遮罩或数据没就绪时保持灭着
+  syncToggle();     // 被面板挡着时保持灭着，等它弹回来再亮
 }
 
 function bindToggle() {
@@ -266,11 +261,7 @@ function bindToggle() {
   if (!toggleBtn) return;
   syncToggle();
   /* 按当前点亮状态取反：面板让位导致按钮灭着时，点一下表达的是「我要看」，不是把意愿关掉 */
-  toggleBtn.addEventListener('click', () => {
-    if (toggleBtn.getAttribute('aria-pressed') === 'true') { setUserOn(false); return; }
-    forced = true;            // 面板开着也允许调出，由 setUserOn 触发 sync 弹入
-    setUserOn(true);
-  });
+  toggleBtn.addEventListener('click', () => setUserOn(toggleBtn.getAttribute('aria-pressed') !== 'true'));
 }
 
 function fmtDate(iso) {
