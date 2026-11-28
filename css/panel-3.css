@@ -15,7 +15,7 @@
     flex-direction: column;
     align-items: flex-start;
   }
-  /* 标题行：中文大字与右侧双行英文小注并排。英文底边对齐标题基线（略抬 12px 抵消
+  /* 标题行：中文大字与右侧单行英文并排。英文底边对齐标题基线（略抬 12px 抵消
      96px 字号的行框下沉量），读起来像挂在标题右肩的副标，而不是居中悬浮的一块 */
   .panel-join__main {
     display: flex;
@@ -29,7 +29,7 @@
     color: var(--white);
     white-space: nowrap;
   }
-  /* 标题右侧双行英文（换行由 <br> 控制，故保留 nowrap 不自动折）
+  /* 标题右侧单行英文（不换行，字号收到能放下为止；颜色取 --dim，与衍生面板的 MERCHANDISE 同色）
      原先是标题下方的独立一行，现挪进 .panel-join__main，靠 flex-end 与标题底边对齐 */
   .panel-join__en {
     flex: none;
@@ -37,7 +37,7 @@
     font-family: var(--text-barlow);
     font-size: var(--text-normal);
     font-weight: 500;
-    color: var(--grey);
+    color: var(--dim);
     white-space: nowrap;
   }
   /* 定制面板正文：宽度上限 680px 保持原有行长，面板变窄时收到可用宽度，不顶出右边界 */
